@@ -10,6 +10,7 @@ import javax.annotation.processing.Generated;
 import org.web3j.abi.EventEncoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.CustomError;
 import org.web3j.abi.datatypes.Event;
 import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
@@ -71,6 +72,37 @@ public class MockUSDC extends Contract {
 
     public static final String FUNC_TRANSFEROWNERSHIP = "transferOwnership";
 
+    public static final CustomError ERC20INSUFFICIENTALLOWANCE_ERROR = new CustomError("ERC20InsufficientAllowance", 
+            Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}, new TypeReference<Uint256>() {}, new TypeReference<Uint256>() {}));
+    ;
+
+    public static final CustomError ERC20INSUFFICIENTBALANCE_ERROR = new CustomError("ERC20InsufficientBalance", 
+            Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}, new TypeReference<Uint256>() {}, new TypeReference<Uint256>() {}));
+    ;
+
+    public static final CustomError ERC20INVALIDAPPROVER_ERROR = new CustomError("ERC20InvalidApprover", 
+            Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
+    ;
+
+    public static final CustomError ERC20INVALIDRECEIVER_ERROR = new CustomError("ERC20InvalidReceiver", 
+            Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
+    ;
+
+    public static final CustomError ERC20INVALIDSENDER_ERROR = new CustomError("ERC20InvalidSender", 
+            Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
+    ;
+
+    public static final CustomError ERC20INVALIDSPENDER_ERROR = new CustomError("ERC20InvalidSpender", 
+            Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
+    ;
+
+    public static final CustomError OWNABLEINVALIDOWNER_ERROR = new CustomError("OwnableInvalidOwner", 
+            Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
+    ;
+
+    public static final CustomError OWNABLEUNAUTHORIZEDACCOUNT_ERROR = new CustomError("OwnableUnauthorizedAccount", 
+            Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
+    ;
 
     public static final Event APPROVAL_EVENT = new Event("Approval", 
             Arrays.<TypeReference<?>>asList(new TypeReference<Address>(true) {}, new TypeReference<Address>(true) {}, new TypeReference<Uint256>() {}));
@@ -361,6 +393,9 @@ public class MockUSDC extends Contract {
         return deployRemoteCall(MockUSDC.class, web3j, transactionManager, gasPrice, gasLimit, getDeploymentBinary(), "");
     }
 
+    public static void linkLibraries(List<Contract.LinkReference> references) {
+        librariesLinkedBinary = linkBinaryWithReferences(BINARY, references);
+    }
 
     private static String getDeploymentBinary() {
         if (librariesLinkedBinary != null) {
