@@ -22,3 +22,26 @@ spring:
       enabled: true
       max-file-size: 3MB
       max-request-size: 5MB
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0  
+
+blockchain:
+  rpc-url: ${BLOCKCHAIN_RPC_URL}
+  chain-id: 80002
+  mock-usdc-address: ${MOCK_USDC_ADDRESS}
+  tiny-payment-address: ${TINY_PAYMENT_ADDRESS}
+  server-wallet:
+    address: ${SERVER_WALLET_ADDRESS}
+    private-key: ${SERVER_WALLET_PRIVATE_KEY}
+  gas:
+    price: 30000000000
+    limit: 300000
