@@ -1,10 +1,10 @@
 package com.tinypay.chat.dto;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 public record CreateChatSessionResponse(
     Long sessionId,
     String title,
-    LocalDateTime createdAt
+    LocalDate createdAt
 ) {
 }

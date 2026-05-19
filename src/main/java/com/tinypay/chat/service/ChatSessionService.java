@@ -33,7 +33,6 @@ public class ChatSessionService {
 
         ChatSession savedChatSession = chatSessionRepository.save(chatSession);
 
-        return new CreateChatSessionResponse(savedChatSession.getId(), savedChatSession.getTitle(), savedChatSession.getCreatedAt()
-        );
+        return new CreateChatSessionResponse(savedChatSession.getId(), savedChatSession.getTitle(), savedChatSession.getCreatedAt().toLocalDate());
     }
 }
