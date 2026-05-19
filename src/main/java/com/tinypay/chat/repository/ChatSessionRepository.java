@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface ChatSessionRepository extends JpaRepository<ChatSession, Long> {
-    List<ChatSession> findAllByUserIdOrderByCreatedAtDesc(Long userId);
+    List<ChatSession> findAllByUserIdOrderByCreatedAtDescIdDesc(Long userId);
 }

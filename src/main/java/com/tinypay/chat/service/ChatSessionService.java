@@ -43,7 +43,7 @@ public class ChatSessionService {
         userRepository.findById(userId)
             .orElseThrow(() -> new CustomException(ErrorType.USER_NOT_FOUND));
 
-        return chatSessionRepository.findAllByUserIdOrderByCreatedAtDesc(userId)
+        return chatSessionRepository.findAllByUserIdOrderByCreatedAtDescIdDesc(userId)
                    .stream()
                    .map(chatSession -> new GetChatSessionResponse(
                        chatSession.getId(),
