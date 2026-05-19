@@ -7,13 +7,13 @@ import com.tinypay.global.exception.CustomException;
 import com.tinypay.global.exception.ErrorType;
 import com.tinypay.user.domain.User;
 import com.tinypay.user.repository.UserRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@org.springframework.transaction.annotation.Transactional (readOnly = true)
+@Transactional(readOnly = true)
 public class ChatSessionService {
 
     private static final String DEFAULT_TITLE = "새 채팅";

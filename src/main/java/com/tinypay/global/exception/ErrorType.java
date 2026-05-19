@@ -13,6 +13,10 @@ public enum ErrorType {
      * HTTP 400 (BAD REQUEST)
      */
     REQUEST_VALIDATION_EXCEPTION(HttpStatus.BAD_REQUEST, "잘못된 요청입니다"),
+    /**
+     * HTTP 401 (UNAUTHORIZED)
+     */
+
 
     /**
      * HTTP 404 (NOT FOUND)
