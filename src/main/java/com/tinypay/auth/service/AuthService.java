@@ -1,10 +1,12 @@
 package com.tinypay.auth.service;
 
+import com.tinypay.auth.domain.RefreshToken;
 import com.tinypay.auth.dto.request.LoginRequest;
 import com.tinypay.auth.dto.response.LoginResponse;
 import com.tinypay.auth.google.GoogleIdTokenVerifier;
 import com.tinypay.auth.google.GoogleUserInfo;
 import com.tinypay.auth.jwt.JwtTokenProvider;
+import com.tinypay.auth.repository.RefreshTokenRepository;
 import com.tinypay.global.exception.CustomException;
 import com.tinypay.global.exception.ErrorType;
 import com.tinypay.user.domain.User;
@@ -14,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -21,6 +25,7 @@ public class AuthService {
     private final GoogleIdTokenVerifier googleIdTokenVerifier;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Transactional
     public LoginResponse googleLogin(LoginRequest request) {
@@ -45,11 +50,18 @@ public class AuthService {
                 ));
 
         String accessToken = jwtTokenProvider.generateToken(user.getId());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
+        String refreshTokenValue = jwtTokenProvider.generateRefreshToken(user.getId());
+
+        refreshTokenRepository.deleteByUserId(user.getId());
+        refreshTokenRepository.save(RefreshToken.builder()
+                .user(user)
+                .refreshToken(refreshTokenValue)
+                .expiresAt(LocalDateTime.now().plusSeconds(jwtTokenProvider.getRefreshExpiration() / 1000))
+                .build());
 
         return LoginResponse.builder()
                 .accessToken(accessToken)
-                .refreshToken(refreshToken)
+                .refreshToken(refreshTokenValue)
                 .user(LoginResponse.UserInfo.builder()
                         .userId(user.getId())
                         .email(user.getEmail())

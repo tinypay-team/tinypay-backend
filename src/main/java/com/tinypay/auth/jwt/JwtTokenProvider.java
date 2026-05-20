@@ -62,6 +62,10 @@ public class JwtTokenProvider {
         return Long.parseLong(claims.getSubject());
     }
 
+    public long getRefreshExpiration() {
+        return refreshExpiration;
+    }
+
     public boolean validateToken(String token) {
         try {
             Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
