@@ -49,7 +49,7 @@ public class AuthService {
                                 .build()
                 ));
 
-        String accessToken = jwtTokenProvider.generateToken(user.getId());
+        String accessToken = jwtTokenProvider.generateAccessToken(user.getId());
         String refreshTokenValue = jwtTokenProvider.generateRefreshToken(user.getId());
 
         refreshTokenRepository.deleteByUserId(user.getId());
