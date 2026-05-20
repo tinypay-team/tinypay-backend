@@ -21,7 +21,7 @@ public class JwtTokenProvider {
     private String secret;
 
     @Value("${jwt.expiration}")
-    private long expiration;
+    private long accessExpiration;
 
     @Value("${jwt.refresh-expiration}")
     private long refreshExpiration;
@@ -33,12 +33,12 @@ public class JwtTokenProvider {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(Long userId) {
+    public String generateAccessToken(Long userId) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .issuedAt(now)
-                .expiration(new Date(now.getTime() + expiration))
+                .expiration(new Date(now.getTime() + accessExpiration))
                 .signWith(secretKey)
                 .compact();
     }
@@ -53,11 +53,11 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public Long extractUserId(String token) {
+    public Long extractUserId(String accessToken) {
         Claims claims = Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
-                .parseSignedClaims(token)
+                .parseSignedClaims(accessToken)
                 .getPayload();
         return Long.parseLong(claims.getSubject());
     }
@@ -66,9 +66,9 @@ public class JwtTokenProvider {
         return refreshExpiration;
     }
 
-    public boolean validateToken(String token) {
+    public boolean validateToken(String accessToken) {
         try {
-            Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
+            Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(accessToken);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
