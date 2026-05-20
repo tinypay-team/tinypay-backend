@@ -17,18 +17,18 @@ public class JwtInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        String token = resolveToken(request);
+        String accessToken = resolveAccessToken(request);
 
-        if (token == null || !jwtTokenProvider.validateToken(token)) {
+        if (accessToken == null || !jwtTokenProvider.validateToken(accessToken)) {
             throw new CustomException(ErrorType.INVALID_ID_TOKEN);
         }
 
-        Long userId = jwtTokenProvider.extractUserId(token);
+        Long userId = jwtTokenProvider.extractUserId(accessToken);
         request.setAttribute("userId", userId);
         return true;
     }
 
-    private String resolveToken(HttpServletRequest request) {
+    private String resolveAccessToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
