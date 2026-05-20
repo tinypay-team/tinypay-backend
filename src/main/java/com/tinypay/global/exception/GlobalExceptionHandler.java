@@ -40,7 +40,7 @@ public class GlobalExceptionHandler {
             validateDetails.put(validKeyName, error.getDefaultMessage());
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                   .body(ApiResponse.error(REQUEST_VALIDATION_EXCEPTION, validateDetails));
+                .body(ApiResponse.error(REQUEST_VALIDATION_EXCEPTION, validateDetails));
     }
 
     /**
