@@ -22,6 +22,13 @@ public class AuthController {
         return ApiResponse.success(SuccessType.LOGIN_SUCCESS, response);
     }
 
+    @DeleteMapping("/auth")
+    public ApiResponse<?> logout(
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        authService.logout(authorization);
+        return ApiResponse.success(SuccessType.LOGOUT_SUCCESS);
+    }
+
     @PostMapping("/auth/refresh")
     public ApiResponse<TokenRefreshResponse> reissueToken(
             @RequestHeader(value = "Authorization", required = false) String authorization) {
