@@ -15,10 +15,13 @@ public enum ErrorType {
     REQUEST_VALIDATION_EXCEPTION(HttpStatus.BAD_REQUEST, "잘못된 요청입니다"),
     MISSING_ID_TOKEN(HttpStatus.BAD_REQUEST, "id_token이 존재하지 않습니다."),
 
+    MISSING_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "refresh_token이 존재하지 않습니다."),
+
     /**
      * HTTP 401 (UNAUTHORIZED)
      */
     INVALID_ID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 ID Token입니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 refresh token입니다."),
 
     /**
      * HTTP 404 (NOT FOUND)

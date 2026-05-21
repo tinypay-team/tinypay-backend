@@ -41,6 +41,11 @@ public class RefreshToken extends BaseTimeEntity {
         this.isRevoked = false;
     }
 
+    public void updateToken(String refreshToken, LocalDateTime expiresAt) {
+        this.refreshToken = refreshToken;
+        this.expiresAt = expiresAt;
+    }
+
     public void revoke() {
         this.isRevoked = true;
     }
