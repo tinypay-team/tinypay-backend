@@ -22,6 +22,7 @@ public enum ErrorType {
      * HTTP 404 (NOT FOUND)
      */
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."),
+    CHAT_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 채팅 세션입니다."),
 
     /**
      * HTTP 500 (INTERNAL SERVER ERROR)
