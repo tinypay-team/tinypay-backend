@@ -3,6 +3,7 @@ package com.tinypay.auth.google;
 import com.tinypay.global.exception.CustomException;
 import com.tinypay.global.exception.ErrorType;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
@@ -11,6 +12,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class GoogleIdTokenVerifier {
@@ -28,6 +30,7 @@ public class GoogleIdTokenVerifier {
             Map<String, String> payload = restTemplate.getForObject(TOKEN_INFO_URL + idToken, Map.class);
 
             if (payload == null || !clientId.equals(payload.get("aud"))) {
+                log.error("aud가 다름");
                 throw new CustomException(ErrorType.INVALID_ID_TOKEN);
             }
 
@@ -39,6 +42,8 @@ public class GoogleIdTokenVerifier {
             return userInfo;
 
         } catch (HttpClientErrorException e) {
+            log.error("httpclienterror");
+            log.error("httpclienterror: {}", e.getResponseBodyAsString());
             throw new CustomException(ErrorType.INVALID_ID_TOKEN);
         } catch (ResourceAccessException e) {
             throw new CustomException(ErrorType.INTERNAL_SERVER_ERROR);
