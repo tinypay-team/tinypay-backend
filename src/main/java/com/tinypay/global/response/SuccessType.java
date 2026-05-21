@@ -14,6 +14,7 @@ public enum SuccessType {
      */
     PROCESS_SUCCESS(HttpStatus.OK, "OK"),
     LOGIN_SUCCESS(HttpStatus.OK, "로그인에 성공했습니다."),
+    LOGOUT_SUCCESS(HttpStatus.OK, "로그아웃에 성공했습니다."),
     TOKEN_REISSUE_SUCCESS(HttpStatus.OK, "토큰 재발급에 성공했습니다."),
     CREATE_CHAT_SESSION_SUCCESS(HttpStatus.CREATED, "새 채팅 세션이 생성되었습니다."),
     GET_CHAT_SESSION_LIST_SUCCESS(HttpStatus.OK, "채팅 세션 목록 조회에 성공했습니다.")

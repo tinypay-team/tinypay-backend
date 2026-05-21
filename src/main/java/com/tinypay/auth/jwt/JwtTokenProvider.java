@@ -85,4 +85,14 @@ public class JwtTokenProvider {
             throw new CustomException(ErrorType.MISSING_REFRESH_TOKEN);
         }
     }
+
+    public void validateAccessTokenOrThrow(String accessToken) {
+        try {
+            Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(accessToken);
+        } catch (ExpiredJwtException e) {
+            throw new CustomException(ErrorType.INVALID_ACCESS_TOKEN);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new CustomException(ErrorType.MISSING_ACCESS_TOKEN);
+        }
+    }
 }
