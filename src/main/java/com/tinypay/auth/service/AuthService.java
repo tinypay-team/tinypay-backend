@@ -69,20 +69,7 @@ public class AuthService {
     }
 
     @Transactional
-    public void logout(String bearerToken) {
-        if (!StringUtils.hasText(bearerToken) || !bearerToken.startsWith("Bearer ")) {
-            throw new CustomException(ErrorType.MISSING_ACCESS_TOKEN);
-        }
-
-        String accessTokenValue = bearerToken.substring(7);
-
-        if (!StringUtils.hasText(accessTokenValue)) {
-            throw new CustomException(ErrorType.MISSING_ACCESS_TOKEN);
-        }
-
-        jwtTokenProvider.validateAccessTokenOrThrow(accessTokenValue);
-
-        Long userId = jwtTokenProvider.extractUserId(accessTokenValue);
+    public void logout(Long userId) {
         refreshTokenRepository.deleteByUserId(userId);
     }
 

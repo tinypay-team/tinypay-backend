@@ -19,9 +19,11 @@ public class JwtInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         String accessToken = resolveAccessToken(request);
 
-        if (accessToken == null || !jwtTokenProvider.validateAccessToken(accessToken)) {
-            throw new CustomException(ErrorType.INVALID_ID_TOKEN);
+        if (accessToken == null) {
+            throw new CustomException(ErrorType.MISSING_ACCESS_TOKEN);
         }
+
+        jwtTokenProvider.validateAccessTokenOrThrow(accessToken);
 
         Long userId = jwtTokenProvider.extractUserId(accessToken);
         request.setAttribute("userId", userId);
