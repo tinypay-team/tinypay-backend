@@ -17,6 +17,9 @@ public enum ErrorType {
 
     MISSING_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "refresh_token이 존재하지 않습니다."),
     MISSING_ACCESS_TOKEN(HttpStatus.BAD_REQUEST, "access token이 존재하지 않습니다."),
+    INVALID_NICKNAME_LENGTH(HttpStatus.BAD_REQUEST, "닉네임은 2자 이상 10자 이하여야 합니다."),
+    INVALID_NICKNAME_FORMAT(HttpStatus.BAD_REQUEST, "닉네임은 한글, 영문, 숫자만 사용할 수 있습니다."),
+    INVALID_URL_FORMAT(HttpStatus.BAD_REQUEST, "올바르지 않은 URL 형식입니다."),
 
     /**
      * HTTP 401 (UNAUTHORIZED)
@@ -28,7 +31,12 @@ public enum ErrorType {
     /**
      * HTTP 404 (NOT FOUND)
      */
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."),
+
+    /**
+     * HTTP 409 (CONFLICT)
+     */
+    DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다."),
 
     /**
      * HTTP 500 (INTERNAL SERVER ERROR)
