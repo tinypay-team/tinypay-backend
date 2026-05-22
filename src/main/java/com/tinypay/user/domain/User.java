@@ -42,11 +42,6 @@ public class User extends BaseTimeEntity {
         this.profileImageUrl = profileImageUrl;
     }
 
-    public void updateProfile(String nickname, String profileImageUrl) {
-        this.nickname = nickname;
-        this.profileImageUrl = profileImageUrl;
-    }
-
     public void softDelete() {
         this.deletedAt = LocalDateTime.now();
     }
