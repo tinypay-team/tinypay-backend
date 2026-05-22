@@ -27,4 +27,10 @@ public class UserController {
         userService.updateMyInfo(userId, request);
         return ApiResponse.success(SuccessType.UPDATE_MY_INFO_SUCCESS);
     }
+
+    @DeleteMapping("/me")
+    public ApiResponse<?> deleteUser(@RequestAttribute("userId") Long userId) {
+        userService.deleteUser(userId);
+        return ApiResponse.success(SuccessType.DELETE_USER_SUCCESS);
+    }
 }
