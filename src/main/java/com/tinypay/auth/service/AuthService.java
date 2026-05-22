@@ -37,10 +37,6 @@ public class AuthService {
         GoogleUserInfo userInfo = googleIdTokenVerifier.verify(request.getIdToken());
 
         User user = userRepository.findByProviderId(userInfo.getSub())
-                .map(existing -> {
-                    existing.updateProfile(userInfo.getName(), userInfo.getPicture());
-                    return existing;
-                })
                 .orElseGet(() -> userRepository.save(
                         User.builder()
                                 .providerId(userInfo.getSub())
