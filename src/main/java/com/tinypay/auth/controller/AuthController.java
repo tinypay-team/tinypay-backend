@@ -10,26 +10,25 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
 
-    @PostMapping("/auth/google")
+    @PostMapping("/google")
     public ApiResponse<LoginResponse> googleLogin(@RequestBody LoginRequest request) {
         LoginResponse response = authService.googleLogin(request);
         return ApiResponse.success(SuccessType.LOGIN_SUCCESS, response);
     }
 
-    @DeleteMapping("/auth")
-    public ApiResponse<?> logout(
-            @RequestHeader(value = "Authorization", required = false) String authorization) {
-        authService.logout(authorization);
+    @DeleteMapping
+    public ApiResponse<?> logout(@RequestAttribute("userId") Long userId) {
+        authService.logout(userId);
         return ApiResponse.success(SuccessType.LOGOUT_SUCCESS);
     }
 
-    @PostMapping("/auth/refresh")
+    @PostMapping("/refresh")
     public ApiResponse<TokenRefreshResponse> reissueToken(
             @RequestHeader(value = "Authorization", required = false) String authorization) {
         TokenRefreshResponse response = authService.reissueToken(authorization);
