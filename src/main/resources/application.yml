@@ -42,6 +42,8 @@ blockchain:
   server-wallet:
     address: ${SERVER_WALLET_ADDRESS}
     private-key: ${SERVER_WALLET_PRIVATE_KEY}
+  encryption:  
+    master-key: ${WALLET_ENCRYPTION_KEY}
   gas:
     price: 30000000000
     limit: 300000
