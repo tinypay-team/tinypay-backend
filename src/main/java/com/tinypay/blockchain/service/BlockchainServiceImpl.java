@@ -1,18 +1,26 @@
 package com.tinypay.blockchain.service;
 
+import com.tinypay.abuse.domain.AbuseActionType;
+import com.tinypay.abuse.domain.AbuseLog;
+import com.tinypay.abuse.domain.AbuseLogRepository;
+import com.tinypay.abuse.domain.AbuseType;
 import com.tinypay.blockchain.contracts.MockUSDC;
 import com.tinypay.blockchain.contracts.TinyPayment;
+import com.tinypay.blockchain.crypto.EncryptionException;
+import com.tinypay.blockchain.crypto.KeyEncryptor;
 import com.tinypay.blockchain.exception.InsufficientPaymentException;
 import com.tinypay.blockchain.exception.InvalidContractException;
 import com.tinypay.blockchain.exception.InvalidRecipientException;
+import com.tinypay.blockchain.exception.PaymentAuthException;
 import com.tinypay.blockchain.exception.ReplayAttackException;
 import com.tinypay.blockchain.exception.TransactionFailedException;
 import com.tinypay.blockchain.verification.ReceiptVerifier;
 import com.tinypay.blockchain.verification.VerificationResult;
-import com.tinypay.blockchain.crypto.EncryptionException;
-import com.tinypay.blockchain.crypto.KeyEncryptor;
+import com.tinypay.finance.domain.Wallet;
+import com.tinypay.finance.domain.WalletRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Keys;
@@ -30,24 +38,30 @@ public class BlockchainServiceImpl implements BlockchainService {
     private final Credentials credentials;
     private final MockUSDC mockUSDC;
     private final TinyPayment tinyPayment;
-    private final ReceiptVerifier receiptVerifier;   
+    private final ReceiptVerifier receiptVerifier;
     private final KeyEncryptor keyEncryptor;
-    
+    private final WalletRepository walletRepository;
+    private final AbuseLogRepository abuseLogRepository;
+
     private static final int USDC_DECIMALS = 6;
 
     public BlockchainServiceImpl(
             Web3j web3j,
             Credentials credentials,
             ContractGasProvider gasProvider,
-            ReceiptVerifier receiptVerifier,       
-            KeyEncryptor keyEncryptor,                                        
+            ReceiptVerifier receiptVerifier,
+            KeyEncryptor keyEncryptor,
+            WalletRepository walletRepository,
+            AbuseLogRepository abuseLogRepository,
             @Value("${blockchain.mock-usdc-address}") String mockUsdcAddress,
             @Value("${blockchain.tiny-payment-address}") String tinyPaymentAddress
     ) {
         this.web3j = web3j;
         this.credentials = credentials;
-        this.receiptVerifier = receiptVerifier; 
-        this.keyEncryptor = keyEncryptor;                                           
+        this.receiptVerifier = receiptVerifier;
+        this.keyEncryptor = keyEncryptor;
+        this.walletRepository = walletRepository;
+        this.abuseLogRepository = abuseLogRepository;
         this.mockUSDC = MockUSDC.load(
                 mockUsdcAddress, web3j, credentials, gasProvider);
         this.tinyPayment = TinyPayment.load(
@@ -115,6 +129,33 @@ public class BlockchainServiceImpl implements BlockchainService {
                 throw new IllegalStateException("불가능한 검증 상태: " + result.getReason());
         }
     }
+
+    /**
+     * 비밀번호 5회 실패 시 지갑 잠금
+     * 백엔드가 Redis 카운트 관리 → 5회 도달 시 이 메서드 호출
+     */
+    @Override
+    @Transactional
+    public void lockWalletForBruteForce(Long userId) {
+        // 1. userId로 지갑 조회
+        Wallet wallet = walletRepository.findByUser_Id(userId)
+                .orElseThrow(() -> new PaymentAuthException(
+                        "지갑 없음: userId=" + userId));
+
+        // 2. 지갑 잠금 (dirty checking으로 자동 저장됨)
+        wallet.lock();
+
+        // 3. AbuseLog 기록
+        AbuseLog abuseLog = AbuseLog.builder()
+                .user(wallet.getUser())
+                .wallet(wallet)
+                .abuseType(AbuseType.PAYMENT_PASSWORD_BRUTE_FORCE.name())
+                .actionTaken(AbuseActionType.WALLET_LOCKED)
+                .detail("비밀번호 5회 실패로 지갑 잠금: userId=" + userId)
+                .build();
+        abuseLogRepository.save(abuseLog);
+    }
+
     @Override
     public CreateWalletResult createWallet() {
         try {
