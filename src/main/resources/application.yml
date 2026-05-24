@@ -23,6 +23,14 @@ spring:
       max-file-size: 3MB
       max-request-size: 5MB
 
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 86400000
+  refresh-expiration: 604800000
+
+google:
+  client-id: ${GOOGLE_CLIENT_ID}
+
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -32,7 +40,7 @@ spring:
         pool:
           max-active: 8
           max-idle: 8
-          min-idle: 0  
+          min-idle: 0
 
 blockchain:
   rpc-url: ${BLOCKCHAIN_RPC_URL}
