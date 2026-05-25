@@ -25,8 +25,8 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration: 86400000
-  refresh-expiration: 604800000
+  expiration: 2419200000
+  refresh-expiration: 2419200000
 
 google:
   client-id: ${GOOGLE_CLIENT_ID}
@@ -40,7 +40,7 @@ google:
         pool:
           max-active: 8
           max-idle: 8
-          min-idle: 0
+          min-idle: 0  
 
 blockchain:
   rpc-url: ${BLOCKCHAIN_RPC_URL}
@@ -50,7 +50,7 @@ blockchain:
   server-wallet:
     address: ${SERVER_WALLET_ADDRESS}
     private-key: ${SERVER_WALLET_PRIVATE_KEY}
-  encryption:  
+  encryption:
     master-key: ${WALLET_ENCRYPTION_KEY}
   gas:
     price: 30000000000

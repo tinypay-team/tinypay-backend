@@ -3,6 +3,7 @@ package com.tinypay.auth.service;
 import com.tinypay.auth.domain.RefreshToken;
 import com.tinypay.auth.dto.request.LoginRequest;
 import com.tinypay.auth.dto.response.LoginResponse;
+import com.tinypay.auth.dto.response.TokenRefreshResponse;
 import com.tinypay.auth.google.GoogleIdTokenVerifier;
 import com.tinypay.auth.google.GoogleUserInfo;
 import com.tinypay.auth.jwt.JwtTokenProvider;
@@ -36,10 +37,6 @@ public class AuthService {
         GoogleUserInfo userInfo = googleIdTokenVerifier.verify(request.getIdToken());
 
         User user = userRepository.findByProviderId(userInfo.getSub())
-                .map(existing -> {
-                    existing.updateProfile(userInfo.getName(), userInfo.getPicture());
-                    return existing;
-                })
                 .orElseGet(() -> userRepository.save(
                         User.builder()
                                 .providerId(userInfo.getSub())
@@ -68,6 +65,47 @@ public class AuthService {
                         .nickname(user.getNickname())
                         .profileImage(user.getProfileImageUrl())
                         .build())
+                .build();
+    }
+
+    @Transactional
+    public void logout(Long userId) {
+        refreshTokenRepository.deleteByUserId(userId);
+    }
+
+    @Transactional
+    public TokenRefreshResponse reissueToken(String bearerToken) {
+        if (!StringUtils.hasText(bearerToken) || !bearerToken.startsWith("Bearer ")) {
+            throw new CustomException(ErrorType.MISSING_REFRESH_TOKEN);
+        }
+
+        String refreshTokenValue = bearerToken.substring(7);
+
+        if (!StringUtils.hasText(refreshTokenValue)) {
+            throw new CustomException(ErrorType.MISSING_REFRESH_TOKEN);
+        }
+
+        jwtTokenProvider.validateRefreshTokenOrThrow(refreshTokenValue);
+
+        RefreshToken refreshToken = refreshTokenRepository.findByRefreshToken(refreshTokenValue)
+                .orElseThrow(() -> new CustomException(ErrorType.INVALID_REFRESH_TOKEN));
+
+        if (refreshToken.isRevoked()) {
+            throw new CustomException(ErrorType.INVALID_REFRESH_TOKEN);
+        }
+
+        Long userId = jwtTokenProvider.extractUserId(refreshTokenValue);
+        String newAccessToken = jwtTokenProvider.generateAccessToken(userId);
+        String newRefreshTokenValue = jwtTokenProvider.generateRefreshToken(userId);
+
+        refreshToken.updateToken(
+                newRefreshTokenValue,
+                LocalDateTime.now().plusSeconds(jwtTokenProvider.getRefreshExpiration() / 1000)
+        );
+
+        return TokenRefreshResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshTokenValue)
                 .build();
     }
 }

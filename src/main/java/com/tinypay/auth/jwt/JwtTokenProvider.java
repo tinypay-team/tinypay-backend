@@ -3,6 +3,7 @@ package com.tinypay.auth.jwt;
 import com.tinypay.global.exception.CustomException;
 import com.tinypay.global.exception.ErrorType;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -66,12 +67,32 @@ public class JwtTokenProvider {
         return refreshExpiration;
     }
 
-    public boolean validateToken(String accessToken) {
+    public boolean validateAccessToken(String accessToken) {
         try {
             Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(accessToken);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
+        }
+    }
+
+    public void validateRefreshTokenOrThrow(String refreshToken) {
+        try {
+            Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(refreshToken);
+        } catch (ExpiredJwtException e) {
+            throw new CustomException(ErrorType.INVALID_REFRESH_TOKEN);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new CustomException(ErrorType.MISSING_REFRESH_TOKEN);
+        }
+    }
+
+    public void validateAccessTokenOrThrow(String accessToken) {
+        try {
+            Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(accessToken);
+        } catch (ExpiredJwtException e) {
+            throw new CustomException(ErrorType.INVALID_ACCESS_TOKEN);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new CustomException(ErrorType.MISSING_ACCESS_TOKEN);
         }
     }
 }
