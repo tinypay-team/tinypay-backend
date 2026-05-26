@@ -34,6 +34,10 @@ spring:
           max-idle: 8
           min-idle: 0  
 
+dify:
+  base-url: ${DIFY_BASE_URL}
+  chat-analysis-api-key: ${DIFY_CHAT_ANALYSIS_API_KEY}
+
 blockchain:
   rpc-url: ${BLOCKCHAIN_RPC_URL}
   chain-id: 80002
