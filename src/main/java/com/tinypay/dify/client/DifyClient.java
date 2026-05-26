@@ -13,13 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-/**
- * Dify API HTTP 클라이언트
- *
- * base-url 예: http://15.164.179.132/v1
- * 호출 endpoint: /workflows/run
- * → 최종 URL: http://15.164.179.132/v1/workflows/run
- */
+//  Dify API HTTP 클라이언트
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -30,14 +24,6 @@ public class DifyClient {
     private final DifyProperties difyProperties;
     private final RestClient restClient;
 
-    /**
-     * 채팅 요청 분석 Workflow 호출 (blocking 모드)
-     *
-     * @param request Dify 요청 DTO
-     * @return Dify 분석 결과
-     * @throws CustomException DIFY_API_ERROR  - HTTP 오류 또는 서버 장애
-     * @throws CustomException DIFY_RESPONSE_INVALID - 응답 파싱 불가 또는 code != 200
-     */
     public ChatAnalysisResponse runChatAnalysis(ChatAnalysisRequest request) {
         String url = difyProperties.baseUrl() + WORKFLOW_RUN_PATH;
         log.debug("[DifyClient] 채팅 분석 요청 → {} | user={}", url, request.user());

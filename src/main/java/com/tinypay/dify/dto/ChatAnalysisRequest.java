@@ -20,7 +20,7 @@ public record ChatAnalysisRequest(
         inputs.put("user_id", userId);
         inputs.put("chat_room_id", sessionId);
         inputs.put("message", message);
-        inputs.put("session_id", sessionId);
+        inputs.put("session_id", String.valueOf(sessionId));
         inputs.put("context", context != null ? context : "");
         inputs.put("default_currency", "USDC");
 

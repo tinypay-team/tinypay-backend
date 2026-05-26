@@ -2,6 +2,7 @@ package com.tinypay.dify.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -34,13 +35,14 @@ public record ChatAnalysisResponse(
             String answer,
 
             @JsonProperty("requires_paid_service")
-            Boolean requiresPaidService,
+            String requiresPaidService,
 
             @JsonProperty("requires_agent")
-            Boolean requiresAgent,
+            String requiresAgent,
 
             // PAYMENT_REQUIRED 케이스
             @JsonProperty("required_services")
+            @JsonDeserialize(using = DifyListDeserializer.RequiredServiceList.class)
             List<RequiredServiceDto> requiredServices,
 
             @JsonProperty("total_estimated_cost")
@@ -59,9 +61,11 @@ public record ChatAnalysisResponse(
             String unsupportedReason,
 
             @JsonProperty("missing_capabilities")
+            @JsonDeserialize(using = DifyListDeserializer.StringList.class)
             List<String> missingCapabilities,
 
             @JsonProperty("suggested_alternatives")
+            @JsonDeserialize(using = DifyListDeserializer.StringList.class)
             List<String> suggestedAlternatives,
 
             String reason
