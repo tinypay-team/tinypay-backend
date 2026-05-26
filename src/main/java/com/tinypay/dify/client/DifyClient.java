@@ -1,5 +1,6 @@
 package com.tinypay.dify.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tinypay.dify.config.DifyProperties;
 import com.tinypay.dify.dto.ChatAnalysisRequest;
 import com.tinypay.dify.dto.ChatAnalysisResponse;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-//  Dify API HTTP 클라이언트
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -23,29 +23,29 @@ public class DifyClient {
 
     private final DifyProperties difyProperties;
     private final RestClient restClient;
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     public ChatAnalysisResponse runChatAnalysis(ChatAnalysisRequest request) {
         String url = difyProperties.baseUrl() + WORKFLOW_RUN_PATH;
         log.debug("[DifyClient] 채팅 분석 요청 → {} | user={}", url, request.user());
 
         try {
-            // Dify 실제 응답 구조: { workflow_run_id, task_id, data: { status, outputs, error } }
-            DifyWorkflowResponse raw = restClient.post()
+            String rawBody = restClient.post()
                     .uri(url)
                     .header("Authorization", "Bearer " + difyProperties.chatAnalysisApiKey())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request)
                     .retrieve()
-                    .body(DifyWorkflowResponse.class);
+                    .body(String.class);
 
-            // 워크플로우 실행 성공 여부 확인 (status = "succeeded")
+            DifyWorkflowResponse raw = objectMapper.readValue(rawBody, DifyWorkflowResponse.class);
+
             if (raw == null || !raw.isSucceeded()) {
                 String errDetail = (raw != null && raw.data() != null) ? raw.data().error() : "null response";
                 log.error("[DifyClient] 워크플로우 실패: {}", errDetail);
                 throw new CustomException(ErrorType.DIFY_API_ERROR);
             }
 
-            // outputs에서 비즈니스 응답 추출
             ChatAnalysisResponse.Data outputs = raw.getOutputs();
             if (outputs == null || outputs.responseType() == null) {
                 log.error("[DifyClient] outputs 또는 response_type 없음");
