@@ -12,13 +12,13 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/chat/messages")
+@RequestMapping("/api/chat/sessions")
 public class ChatMessageController {
 
     private final ChatMessageService chatMessageService;
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<CreateChatMessageResponse>> createChatMessage(@RequestParam Long userId, @RequestBody CreateChatMessageRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(SuccessType.CHAT_MESSAGE_CREATE_SUCCESS, chatMessageService.createChatMessage(userId, request)));
+    @PostMapping("/{sessionId}/messages")
+    public ResponseEntity<ApiResponse<CreateChatMessageResponse>> createChatMessage(@PathVariable Long sessionId,@RequestParam Long userId,@RequestBody CreateChatMessageRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(SuccessType.CHAT_MESSAGE_CREATE_SUCCESS, chatMessageService.createChatMessage(userId, sessionId, request)));
     }
 }

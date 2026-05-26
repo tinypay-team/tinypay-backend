@@ -23,6 +23,13 @@ public enum ErrorType {
      */
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."),
     CHAT_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 채팅 세션입니다."),
+    AI_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 AI 요청입니다."),
+
+    /**
+     * HTTP 502 (BAD GATEWAY) - 외부 API 오류
+     */
+    DIFY_API_ERROR(HttpStatus.BAD_GATEWAY, "AI 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."),
+    DIFY_RESPONSE_INVALID(HttpStatus.BAD_GATEWAY, "AI 서버로부터 유효하지 않은 응답을 받았습니다."),
 
     /**
      * HTTP 500 (INTERNAL SERVER ERROR)
