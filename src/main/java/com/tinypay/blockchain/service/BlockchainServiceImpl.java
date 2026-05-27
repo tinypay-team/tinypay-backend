@@ -9,9 +9,13 @@ import com.tinypay.blockchain.exception.ReplayAttackException;
 import com.tinypay.blockchain.exception.TransactionFailedException;
 import com.tinypay.blockchain.verification.ReceiptVerifier;
 import com.tinypay.blockchain.verification.VerificationResult;
+import com.tinypay.blockchain.crypto.EncryptionException;
+import com.tinypay.blockchain.crypto.KeyEncryptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.web3j.crypto.Credentials;
+import org.web3j.crypto.ECKeyPair;
+import org.web3j.crypto.Keys;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.gas.ContractGasProvider;
@@ -27,20 +31,23 @@ public class BlockchainServiceImpl implements BlockchainService {
     private final MockUSDC mockUSDC;
     private final TinyPayment tinyPayment;
     private final ReceiptVerifier receiptVerifier;   
-
+    private final KeyEncryptor keyEncryptor;
+    
     private static final int USDC_DECIMALS = 6;
 
     public BlockchainServiceImpl(
             Web3j web3j,
             Credentials credentials,
             ContractGasProvider gasProvider,
-            ReceiptVerifier receiptVerifier,                                               // ← 파라미터 추가
+            ReceiptVerifier receiptVerifier,       
+            KeyEncryptor keyEncryptor,                                        
             @Value("${blockchain.mock-usdc-address}") String mockUsdcAddress,
             @Value("${blockchain.tiny-payment-address}") String tinyPaymentAddress
     ) {
         this.web3j = web3j;
         this.credentials = credentials;
-        this.receiptVerifier = receiptVerifier;                                            // ← 본문 추가
+        this.receiptVerifier = receiptVerifier; 
+        this.keyEncryptor = keyEncryptor;                                           
         this.mockUSDC = MockUSDC.load(
                 mockUsdcAddress, web3j, credentials, gasProvider);
         this.tinyPayment = TinyPayment.load(
@@ -106,6 +113,34 @@ public class BlockchainServiceImpl implements BlockchainService {
             default:
                 // SUCCESS는 위에서 이미 처리됐으므로 여기 도달 불가
                 throw new IllegalStateException("불가능한 검증 상태: " + result.getReason());
+        }
+    }
+    @Override
+    public CreateWalletResult createWallet() {
+        try {
+            // 1. ECKeyPair 새로 생성 (안전한 난수 기반)
+            ECKeyPair keyPair = Keys.createEcKeyPair();
+
+            // 2. 지갑 주소 추출 (0x + 40자리 hex)
+            String walletAddress = "0x" + Keys.getAddress(keyPair);
+
+            // 3. private key 추출 → hex 문자열로 변환
+            //    BigInteger.toString(16)는 앞쪽 0을 생략하므로 64자리로 패딩
+            String privateKeyHex = keyPair.getPrivateKey().toString(16);
+            String paddedPrivateKey = String.format("%64s", privateKeyHex).replace(' ', '0');
+
+            // 4. AES-256-GCM 으로 암호화
+            String encryptedPrivateKey = keyEncryptor.encrypt(paddedPrivateKey);
+
+            // 5. 결과 반환 (백엔드가 Wallet 엔티티 저장 시 사용)
+            return new CreateWalletResult(walletAddress, encryptedPrivateKey);
+
+        } catch (EncryptionException e) {
+            // 암호화 실패는 그대로 위로 전파
+            throw e;
+        } catch (Exception e) {
+            // 키페어 생성 실패 등 기타 예외
+            throw new RuntimeException("지갑 생성 실패: " + e.getMessage(), e);
         }
     }
 }
