@@ -29,6 +29,7 @@ import org.web3j.crypto.Keys;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.gas.ContractGasProvider;
+import org.web3j.tx.TransactionManager;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -51,6 +52,7 @@ public class BlockchainServiceImpl implements BlockchainService {
             Web3j web3j,
             Credentials credentials,
             ContractGasProvider gasProvider,
+            TransactionManager txManager,
             ReceiptVerifier receiptVerifier,
             KeyEncryptor keyEncryptor,
             WalletRepository walletRepository,
@@ -65,9 +67,9 @@ public class BlockchainServiceImpl implements BlockchainService {
         this.walletRepository = walletRepository;
         this.abuseLogRepository = abuseLogRepository;
         this.mockUSDC = MockUSDC.load(
-                mockUsdcAddress, web3j, credentials, gasProvider);
+                mockUsdcAddress, web3j, txManager, gasProvider);
         this.tinyPayment = TinyPayment.load(
-                tinyPaymentAddress, web3j, credentials, gasProvider);
+                tinyPaymentAddress, web3j, txManager, gasProvider);
     }
 
     @Override
@@ -151,7 +153,7 @@ public class BlockchainServiceImpl implements BlockchainService {
                                String serviceType) {
         try {
             TransactionReceipt receipt = tinyPayment.executePayment(
-                    orderId, toWallet, amount, serviceType);
+                    orderId, toWallet, amount, serviceType).send();
             return receipt.getTransactionHash();
         } catch (Exception e) {
             throw new RuntimeException("결제 실패: " + e.getMessage(), e);

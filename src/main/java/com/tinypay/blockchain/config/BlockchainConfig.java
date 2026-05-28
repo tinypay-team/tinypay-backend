@@ -8,6 +8,8 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.StaticGasProvider;
+import org.web3j.tx.RawTransactionManager;
+import org.web3j.tx.TransactionManager;
 
 import java.math.BigInteger;
 
@@ -26,6 +28,9 @@ public class BlockchainConfig {
     @Value("${blockchain.gas.limit}")
     private BigInteger gasLimit;
 
+    @Value("${blockchain.chain-id}")
+    private long chainId;
+
     @Bean
     public Web3j web3j() {
         return Web3j.build(new HttpService(rpcUrl));
@@ -39,5 +44,10 @@ public class BlockchainConfig {
     @Bean
     public ContractGasProvider gasProvider() {
         return new StaticGasProvider(gasPrice, gasLimit);
+    }
+    
+    @Bean
+    public TransactionManager transactionManager(Web3j web3j, Credentials credentials) {
+        return new RawTransactionManager(web3j, credentials, chainId);
     }
 }
