@@ -21,7 +21,8 @@ public enum SuccessType {
     CHAT_MESSAGE_CREATE_SUCCESS(HttpStatus.CREATED, "메시지가 생성되었습니다."),
     GET_MY_INFO_SUCCESS(HttpStatus.OK, "내 정보 조회에 성공했습니다."),
     UPDATE_MY_INFO_SUCCESS(HttpStatus.OK, "내 정보 수정에 성공했습니다."),
-    DELETE_USER_SUCCESS(HttpStatus.OK, "회원 탈퇴에 성공했습니다.")
+    DELETE_USER_SUCCESS(HttpStatus.OK, "회원 탈퇴에 성공했습니다."),
+    PAYMENT_SUCCESS(HttpStatus.CREATED, "결제에 성공했습니다.")
     ;
 
     private final HttpStatus httpStatus;

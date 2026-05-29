@@ -1,4 +1,4 @@
-package com.tinypay.request.domain;
+package com.tinypay.dify.domain;
 
 public enum AiRequestStatus {
     ANALYZING,

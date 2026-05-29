@@ -1,4 +1,4 @@
-package com.tinypay.request.domain;
+package com.tinypay.dify.domain;
 
 import com.tinypay.chat.domain.ChatMessage;
 import com.tinypay.chat.domain.ChatSession;
