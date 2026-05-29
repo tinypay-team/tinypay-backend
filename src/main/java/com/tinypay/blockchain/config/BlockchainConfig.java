@@ -47,7 +47,7 @@ public class BlockchainConfig {
     }
     
     @Bean
-    public TransactionManager transactionManager(Web3j web3j, Credentials credentials) {
+    public TransactionManager web3jTransactionManager(Web3j web3j, Credentials credentials) {
         return new RawTransactionManager(web3j, credentials, chainId);
     }
 }
