@@ -51,6 +51,10 @@ public class BudgetPolicy extends BaseTimeEntity {
         this.monthlyLimit = monthlyLimit;
     }
 
+    public void updatePerRequestLimit(BigDecimal perRequestLimit) {
+        this.perRequestLimit = perRequestLimit;
+    }
+
     public void updateAutoPaymentEnabled(boolean autoPaymentEnabled) {
         this.autoPaymentEnabled = autoPaymentEnabled;
     }
