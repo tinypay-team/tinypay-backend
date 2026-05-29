@@ -2,7 +2,7 @@ package com.tinypay.chat.dto;
 
 import com.tinypay.chat.domain.MessageType;
 import com.tinypay.chat.domain.SenderRole;
-import com.tinypay.request.domain.AiRequestStatus;
+import com.tinypay.dify.domain.AiRequestStatus;
 
 import java.time.LocalDateTime;
 

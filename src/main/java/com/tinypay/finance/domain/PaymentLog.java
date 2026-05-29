@@ -1,7 +1,7 @@
 package com.tinypay.finance.domain;
 
 import com.tinypay.global.common.entity.BaseTimeEntity;
-import com.tinypay.request.domain.AiRequest;
+import com.tinypay.dify.domain.AiRequest;
 import com.tinypay.user.domain.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

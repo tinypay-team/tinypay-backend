@@ -8,6 +8,8 @@ import com.tinypay.auth.google.GoogleIdTokenVerifier;
 import com.tinypay.auth.google.GoogleUserInfo;
 import com.tinypay.auth.jwt.JwtTokenProvider;
 import com.tinypay.auth.repository.RefreshTokenRepository;
+import com.tinypay.finance.domain.BudgetPolicy;
+import com.tinypay.finance.repository.BudgetPolicyRepository;
 import com.tinypay.global.exception.CustomException;
 import com.tinypay.global.exception.ErrorType;
 import com.tinypay.user.domain.User;
@@ -27,6 +29,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final BudgetPolicyRepository budgetPolicyRepository;
 
     @Transactional
     public LoginResponse googleLogin(LoginRequest request) {
@@ -37,14 +40,20 @@ public class AuthService {
         GoogleUserInfo userInfo = googleIdTokenVerifier.verify(request.getIdToken());
 
         User user = userRepository.findByProviderId(userInfo.getSub())
-                .orElseGet(() -> userRepository.save(
-                        User.builder()
-                                .providerId(userInfo.getSub())
-                                .email(userInfo.getEmail())
-                                .nickname(userInfo.getName())
-                                .profileImageUrl(userInfo.getPicture())
-                                .build()
-                ));
+                .orElseGet(() -> {
+                    User newUser = userRepository.save(
+                            User.builder()
+                                    .providerId(userInfo.getSub())
+                                    .email(userInfo.getEmail())
+                                    .nickname(userInfo.getName())
+                                    .profileImageUrl(userInfo.getPicture())
+                                    .build()
+                    );
+                    budgetPolicyRepository.save(BudgetPolicy.builder()
+                            .user(newUser)
+                            .build());
+                    return newUser;
+                });
 
         String accessToken = jwtTokenProvider.generateAccessToken(user.getId());
         String refreshTokenValue = jwtTokenProvider.generateRefreshToken(user.getId());

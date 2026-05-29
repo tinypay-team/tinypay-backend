@@ -6,6 +6,7 @@ import com.tinypay.auth.dto.response.TokenRefreshResponse;
 import com.tinypay.auth.service.AuthService;
 import com.tinypay.global.response.ApiResponse;
 import com.tinypay.global.response.SuccessType;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,7 +18,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/google")
-    public ApiResponse<LoginResponse> googleLogin(@RequestBody LoginRequest request) {
+    public ApiResponse<LoginResponse> googleLogin(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authService.googleLogin(request);
         return ApiResponse.success(SuccessType.LOGIN_SUCCESS, response);
     }
