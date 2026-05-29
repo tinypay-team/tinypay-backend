@@ -25,7 +25,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentApproveService {
@@ -107,7 +106,6 @@ public class PaymentApproveService {
                     "AI_SERVICE"
             );
         } catch (Exception e) {
-            log.error("블록체인 결제 실패: {}", e.getMessage());
             throw new CustomException(ErrorType.INTERNAL_SERVER_ERROR);
         }
 
