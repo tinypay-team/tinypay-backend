@@ -1,24 +1,35 @@
 package com.tinypay.blockchain.service;
 
+import com.tinypay.abuse.domain.AbuseActionType;
+import com.tinypay.abuse.domain.AbuseLog;
+import com.tinypay.abuse.domain.AbuseLogRepository;
+import com.tinypay.abuse.domain.AbuseType;
 import com.tinypay.blockchain.contracts.MockUSDC;
 import com.tinypay.blockchain.contracts.TinyPayment;
+import com.tinypay.blockchain.crypto.EncryptionException;
+import com.tinypay.blockchain.crypto.KeyEncryptor;
 import com.tinypay.blockchain.exception.InsufficientPaymentException;
 import com.tinypay.blockchain.exception.InvalidContractException;
 import com.tinypay.blockchain.exception.InvalidRecipientException;
+import com.tinypay.blockchain.exception.PaymentAuthException;
 import com.tinypay.blockchain.exception.ReplayAttackException;
 import com.tinypay.blockchain.exception.TransactionFailedException;
 import com.tinypay.blockchain.verification.ReceiptVerifier;
 import com.tinypay.blockchain.verification.VerificationResult;
-import com.tinypay.blockchain.crypto.EncryptionException;
-import com.tinypay.blockchain.crypto.KeyEncryptor;
+import com.tinypay.finance.domain.Wallet;
+import com.tinypay.finance.domain.WalletRepository;
+import com.tinypay.finance.domain.WalletStatus;
+import com.tinypay.global.common.auth.PaymentAuthContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Keys;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.gas.ContractGasProvider;
+import org.web3j.tx.TransactionManager;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -30,28 +41,35 @@ public class BlockchainServiceImpl implements BlockchainService {
     private final Credentials credentials;
     private final MockUSDC mockUSDC;
     private final TinyPayment tinyPayment;
-    private final ReceiptVerifier receiptVerifier;   
+    private final ReceiptVerifier receiptVerifier;
     private final KeyEncryptor keyEncryptor;
-    
+    private final WalletRepository walletRepository;
+    private final AbuseLogRepository abuseLogRepository;
+
     private static final int USDC_DECIMALS = 6;
 
     public BlockchainServiceImpl(
             Web3j web3j,
             Credentials credentials,
             ContractGasProvider gasProvider,
-            ReceiptVerifier receiptVerifier,       
-            KeyEncryptor keyEncryptor,                                        
+            TransactionManager txManager,
+            ReceiptVerifier receiptVerifier,
+            KeyEncryptor keyEncryptor,
+            WalletRepository walletRepository,
+            AbuseLogRepository abuseLogRepository,
             @Value("${blockchain.mock-usdc-address}") String mockUsdcAddress,
             @Value("${blockchain.tiny-payment-address}") String tinyPaymentAddress
     ) {
         this.web3j = web3j;
         this.credentials = credentials;
-        this.receiptVerifier = receiptVerifier; 
-        this.keyEncryptor = keyEncryptor;                                           
+        this.receiptVerifier = receiptVerifier;
+        this.keyEncryptor = keyEncryptor;
+        this.walletRepository = walletRepository;
+        this.abuseLogRepository = abuseLogRepository;
         this.mockUSDC = MockUSDC.load(
-                mockUsdcAddress, web3j, credentials, gasProvider);
+                mockUsdcAddress, web3j, txManager, gasProvider);
         this.tinyPayment = TinyPayment.load(
-                tinyPaymentAddress, web3j, credentials, gasProvider);
+                tinyPaymentAddress, web3j, txManager, gasProvider);
     }
 
     @Override
@@ -66,7 +84,61 @@ public class BlockchainServiceImpl implements BlockchainService {
     }
 
     @Override
-    public String mintUsdc(String toWallet, BigInteger amount) {
+    @Transactional
+    public String mintUsdc(String toWallet, BigInteger amount, PaymentAuthContext authCtx) {
+        // ===== 보안 검증 =====
+
+        // 1. authCtx null 체크 (백엔드 버그 방어)
+        if (authCtx == null) {
+            throw new PaymentAuthException("인증 컨텍스트 누락");
+        }
+
+        Long userId = authCtx.getUserId();
+
+        // 2. 비밀번호 검증 통과 여부
+        //    (서버가 통과한 결과만 보내야 하지만 이중 방어)
+        if (!authCtx.isPasswordVerified()) {
+            throw new PaymentAuthException(
+                    "결제 비밀번호 검증 실패: userId=" + userId);
+        }
+
+        // 3. TODO: 본인인증 검증 (백엔드가 phone_verified 필드 추가 후 활성화)
+        //    회의 합의 사항: 본인인증 책임은 백엔드 영역
+        //    활성화 방법:
+        //      1. UserRepository 의존성 추가
+        //      2. user.isPhoneVerified() 확인
+        //      3. false면 AbuseLog(UNAUTHORIZED_PAYMENT_ATTEMPT) + PaymentAuthException
+        // if (!authCtx.isPhoneVerified()) {
+        //     AbuseLog abuseLog = AbuseLog.builder()
+        //             .user(...)
+        //             .abuseType(AbuseType.UNAUTHORIZED_PAYMENT_ATTEMPT.name())
+        //             .actionTaken(AbuseActionType.BLOCKED)
+        //             .detail("본인인증 미완료 충전 시도: userId=" + userId)
+        //             .build();
+        //     abuseLogRepository.save(abuseLog);
+        //     throw new PaymentAuthException("본인인증 미완료: userId=" + userId);
+        // }
+
+        // 4. Wallet 조회
+        Wallet wallet = walletRepository.findByUser_Id(userId)
+                .orElseThrow(() -> new PaymentAuthException(
+                        "지갑 없음: userId=" + userId));
+
+        // 5. Wallet 상태 검증 (ACTIVE만 허용)
+        if (wallet.getWalletStatus() != WalletStatus.ACTIVE) {
+            AbuseLog abuseLog = AbuseLog.builder()
+                    .user(wallet.getUser())
+                    .wallet(wallet)
+                    .abuseType(AbuseType.LOCKED_WALLET_ACCESS.name())
+                    .actionTaken(AbuseActionType.BLOCKED)
+                    .detail("비정상 지갑 상태로 충전 시도: status=" + wallet.getWalletStatus())
+                    .build();
+            abuseLogRepository.save(abuseLog);
+            throw new PaymentAuthException(
+                    "지갑 상태 비정상: " + wallet.getWalletStatus());
+        }
+
+        // ===== 검증 통과 → 블록체인 호출 =====
         try {
             TransactionReceipt receipt = mockUSDC.mint(toWallet, amount).send();
             return receipt.getTransactionHash();
@@ -81,7 +153,7 @@ public class BlockchainServiceImpl implements BlockchainService {
                                String serviceType) {
         try {
             TransactionReceipt receipt = tinyPayment.executePayment(
-                    orderId, toWallet, amount, serviceType);
+                    orderId, toWallet, amount, serviceType).send();
             return receipt.getTransactionHash();
         } catch (Exception e) {
             throw new RuntimeException("결제 실패: " + e.getMessage(), e);
@@ -115,6 +187,33 @@ public class BlockchainServiceImpl implements BlockchainService {
                 throw new IllegalStateException("불가능한 검증 상태: " + result.getReason());
         }
     }
+
+    /**
+     * 비밀번호 5회 실패 시 지갑 잠금
+     * 백엔드가 Redis 카운트 관리 → 5회 도달 시 이 메서드 호출
+     */
+    @Override
+    @Transactional
+    public void lockWalletForBruteForce(Long userId) {
+        // 1. userId로 지갑 조회
+        Wallet wallet = walletRepository.findByUser_Id(userId)
+                .orElseThrow(() -> new PaymentAuthException(
+                        "지갑 없음: userId=" + userId));
+
+        // 2. 지갑 잠금 (dirty checking으로 자동 저장됨)
+        wallet.lock();
+
+        // 3. AbuseLog 기록
+        AbuseLog abuseLog = AbuseLog.builder()
+                .user(wallet.getUser())
+                .wallet(wallet)
+                .abuseType(AbuseType.PAYMENT_PASSWORD_BRUTE_FORCE.name())
+                .actionTaken(AbuseActionType.WALLET_LOCKED)
+                .detail("비밀번호 5회 실패로 지갑 잠금: userId=" + userId)
+                .build();
+        abuseLogRepository.save(abuseLog);
+    }
+
     @Override
     public CreateWalletResult createWallet() {
         try {
