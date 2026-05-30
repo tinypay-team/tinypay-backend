@@ -1,7 +1,9 @@
 package com.tinypay.finance.service;
 
 import com.tinypay.finance.domain.BudgetPolicy;
+import com.tinypay.finance.dto.request.UpdateMonthlyBudgetRequest;
 import com.tinypay.finance.dto.request.UpdatePerPaymentLimitRequest;
+import com.tinypay.finance.dto.response.UpdateMonthlyBudgetResponse;
 import com.tinypay.finance.dto.response.UpdatePerPaymentLimitResponse;
 import com.tinypay.finance.repository.BudgetPolicyRepository;
 import com.tinypay.global.exception.CustomException;
@@ -37,6 +39,27 @@ public class BudgetPolicyService {
 
         return UpdatePerPaymentLimitResponse.builder()
                 .perPaymentLimit(policy.getPerRequestLimit())
+                .build();
+    }
+
+    @Transactional
+    public UpdateMonthlyBudgetResponse updateMonthlyBudget(Long userId, UpdateMonthlyBudgetRequest request) {
+        User user = userRepository.findById(userId)
+                .filter(u -> u.getDeletedAt() == null)
+                .orElseThrow(() -> new CustomException(ErrorType.USER_NOT_FOUND));
+
+        BudgetPolicy policy = budgetPolicyRepository.findByUser_IdAndDeletedAtIsNull(userId)
+                .orElseGet(() -> budgetPolicyRepository.save(
+                        BudgetPolicy.builder()
+                                .user(user)
+                                .autoPaymentEnabled(false)
+                                .build()
+                ));
+
+        policy.updateMonthlyLimit(request.getMonthlyBudget());
+
+        return UpdateMonthlyBudgetResponse.builder()
+                .monthlyBudget(policy.getMonthlyLimit())
                 .build();
     }
 }
