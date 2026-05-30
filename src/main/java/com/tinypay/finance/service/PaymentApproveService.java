@@ -33,6 +33,7 @@ public class PaymentApproveService {
     private final WalletRepository walletRepository;
     private final BudgetPolicyRepository budgetPolicyRepository;
     private final PaymentLogRepository paymentLogRepository;
+    private final PaymentLogService paymentLogService;
     private final BlockchainService blockchainService;
 
     @Value("${blockchain.server-wallet.address}")
@@ -106,6 +107,8 @@ public class PaymentApproveService {
                     "AI_SERVICE"
             );
         } catch (Exception e) {
+            paymentLogService.saveFailedPaymentLog(
+                    aiRequest.getUser(), aiRequest, wallet, orderId, receiverWalletAddress, estimatedCost);
             throw new CustomException(ErrorType.INTERNAL_SERVER_ERROR);
         }
 
