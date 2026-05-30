@@ -18,7 +18,7 @@ public class ChatMessageController {
     private final ChatMessageService chatMessageService;
 
     @PostMapping("/{sessionId}/messages")
-    public ResponseEntity<ApiResponse<CreateChatMessageResponse>> createChatMessage(@PathVariable Long sessionId,@RequestParam Long userId,@RequestBody CreateChatMessageRequest request) {
+    public ResponseEntity<ApiResponse<CreateChatMessageResponse>> createChatMessage(@PathVariable Long sessionId, @RequestAttribute("userId") Long userId, @RequestBody CreateChatMessageRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(SuccessType.CHAT_MESSAGE_CREATE_SUCCESS, chatMessageService.createChatMessage(userId, sessionId, request)));
     }
 }

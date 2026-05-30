@@ -21,12 +21,12 @@ public class ChatSessionController {
     private final ChatSessionService chatSessionService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<CreateChatSessionResponse>> createChatSession(@RequestParam Long userId) {
+    public ResponseEntity<ApiResponse<CreateChatSessionResponse>> createChatSession(@RequestAttribute("userId") Long userId) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(SuccessType.CREATE_CHAT_SESSION_SUCCESS, chatSessionService.createChatSession(userId)));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<GetChatSessionResponse>>> getChatSessions(@RequestParam Long userId) {
+    public ResponseEntity<ApiResponse<List<GetChatSessionResponse>>> getChatSessions(@RequestAttribute("userId") Long userId) {
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(SuccessType.GET_CHAT_SESSION_LIST_SUCCESS, chatSessionService.getChatSessions(userId)));
     }
 }
