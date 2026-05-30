@@ -24,7 +24,8 @@ public enum SuccessType {
     DELETE_USER_SUCCESS(HttpStatus.OK, "회원 탈퇴에 성공했습니다."),
     PAYMENT_SUCCESS(HttpStatus.CREATED, "결제에 성공했습니다."),
     UPDATE_PER_PAYMENT_LIMIT_SUCCESS(HttpStatus.OK, "1회 결제 한도 설정에 성공했습니다."),
-    UPDATE_MONTHLY_BUDGET_SUCCESS(HttpStatus.OK, "월간 결제 한도 설정에 성공했습니다.")
+    UPDATE_MONTHLY_BUDGET_SUCCESS(HttpStatus.OK, "월간 결제 한도 설정에 성공했습니다."),
+    GET_MY_PAGE_SUCCESS(HttpStatus.OK, "마이페이지 조회에 성공했습니다.")
     ;
 
     private final HttpStatus httpStatus;

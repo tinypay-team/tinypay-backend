@@ -38,6 +38,9 @@ public class AiRequest extends BaseTimeEntity {
     @Column(name = "ai_server_request_id")
     private String aiServerRequestId;
 
+    @Column(name = "service_name")
+    private String serviceName;
+
     @Lob
     private String prompt;
 
@@ -65,12 +68,13 @@ public class AiRequest extends BaseTimeEntity {
     private LocalDateTime completedAt;
 
     @Builder
-    public AiRequest(User user, ChatMessage message, ChatSession session, String aiServerRequestId, String prompt, AiRequestStatus status, String statusMessage, BigDecimal estimatedTotalCost, String analysisSummary
+    public AiRequest(User user, ChatMessage message, ChatSession session, String aiServerRequestId, String serviceName, String prompt, AiRequestStatus status, String statusMessage, BigDecimal estimatedTotalCost, String analysisSummary
     ) {
         this.user = user;
         this.message = message;
         this.session = session;
         this.aiServerRequestId = aiServerRequestId;
+        this.serviceName = serviceName;
         this.prompt = prompt;
         this.status = status == null ? AiRequestStatus.ANALYZING : status;
         this.statusMessage = statusMessage;
