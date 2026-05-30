@@ -6,11 +6,15 @@ import com.tinypay.chat.domain.MessageType;
 import com.tinypay.chat.domain.SenderRole;
 import com.tinypay.chat.dto.CreateChatMessageRequest;
 import com.tinypay.chat.dto.CreateChatMessageResponse;
+import com.tinypay.chat.dto.GetChatMessageResponse;
 import com.tinypay.chat.repository.ChatMessageRepository;
 import com.tinypay.chat.repository.ChatSessionRepository;
+import com.tinypay.dify.repository.AiRequestApiItemRepository;
 import com.tinypay.dify.repository.AiRequestRepository;
 import com.tinypay.global.exception.CustomException;
 import com.tinypay.global.exception.ErrorType;
+import com.tinypay.request.dto.ApiItemResponse;
+import com.tinypay.user.repository.UserRepository;
 import com.tinypay.dify.domain.AiRequest;
 import com.tinypay.dify.domain.AiRequestStatus;
 import lombok.RequiredArgsConstructor;
@@ -33,8 +37,10 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatSessionRepository chatSessionRepository;
     private final AiRequestRepository aiRequestRepository;
+    private final AiRequestApiItemRepository aiRequestApiItemRepository;
     private final ChatAnalysisService chatAnalysisService;
     private final DifyAsyncService difyAsyncService;
+    private final UserRepository userRepository;
 
     @Transactional
     public CreateChatMessageResponse createChatMessage(Long userId, Long sessionId, CreateChatMessageRequest request) {
@@ -112,6 +118,44 @@ public class ChatMessageService {
         );
     }
 
+
+    public List<GetChatMessageResponse> getChatMessages(Long userId, Long sessionId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorType.USER_NOT_FOUND));
+
+        chatSessionRepository.findByIdAndUserId(sessionId, userId)
+                .orElseThrow(() -> new CustomException(ErrorType.CHAT_SESSION_NOT_FOUND));
+
+        return chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId)
+                .stream()
+                .map(message -> {
+                    AiRequest request = message.getRequest();
+                    List<ApiItemResponse> apiItems = null;
+                    java.math.BigDecimal totalEstimatedCost = null;
+
+                    if (request != null
+                            && message.getSenderRole() == SenderRole.ASSISTANT
+                            && request.getStatus() == AiRequestStatus.WAITING_APPROVAL) {
+                        apiItems = aiRequestApiItemRepository.findAllByRequestOrderByExecutionOrderAsc(request)
+                                .stream()
+                                .map(ApiItemResponse::from)
+                                .toList();
+                        totalEstimatedCost = request.getEstimatedTotalCost();
+                    }
+
+                    return new GetChatMessageResponse(
+                            message.getId(),
+                            message.getSenderRole(),
+                            message.getMessageType(),
+                            message.getContent(),
+                            request != null ? request.getId() : null,
+                            apiItems,
+                            totalEstimatedCost,
+                            message.getCreatedAt()
+                    );
+                })
+                .toList();
+    }
 
     // context용 이전 메시지 최근 N개 조회
     private List<ChatMessage> getRecentMessagesForContext(Long sessionId) {
