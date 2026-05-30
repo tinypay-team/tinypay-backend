@@ -26,7 +26,8 @@ public enum SuccessType {
     UPDATE_PER_PAYMENT_LIMIT_SUCCESS(HttpStatus.OK, "1회 결제 한도 설정에 성공했습니다."),
     UPDATE_MONTHLY_BUDGET_SUCCESS(HttpStatus.OK, "이번 달 예산 설정에 성공했습니다."),
     GET_MY_PAGE_SUCCESS(HttpStatus.OK, "마이페이지 조회에 성공했습니다."),
-    GET_PAYMENT_LIST_SUCCESS(HttpStatus.OK, "결제 내역 조회에 성공했습니다.")
+    GET_PAYMENT_LIST_SUCCESS(HttpStatus.OK, "결제 내역 조회에 성공했습니다."),
+    GET_AI_REQUEST_STATUS_SUCCESS(HttpStatus.OK, "AI 요청 상태를 조회했습니다.")
     ;
 
     private final HttpStatus httpStatus;
