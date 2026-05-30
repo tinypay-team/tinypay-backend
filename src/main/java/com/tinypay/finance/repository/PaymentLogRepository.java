@@ -20,6 +20,10 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, Long> {
 
     List<PaymentLog> findTop3ByUser_IdAndPaymentStatusOrderByExecutedAtDesc(Long userId, PaymentStatus status);
 
+    List<PaymentLog> findTop10ByUser_IdOrderByIdDesc(Long userId);
+
+    List<PaymentLog> findTop10ByUser_IdAndIdLessThanOrderByIdDesc(Long userId, Long cursor);
+
     @Query("SELECT COUNT(p) FROM PaymentLog p " +
             "WHERE p.user.id = :userId " +
             "AND p.paymentStatus = :status " +
