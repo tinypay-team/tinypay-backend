@@ -49,10 +49,9 @@ public class ChatMessageService {
     @Transactional
     public CreateChatMessageResponse createChatMessage(Long userId, Long sessionId, CreateChatMessageRequest request) {
 
-        // 1. 요청 검증
+        // 1. 요청 검증 - 텍스트와 파일 모두 없으면 에러
         if (request == null
-                || request.content() == null
-                || request.content().isBlank()) {
+                || ((request.content() == null || request.content().isBlank()) && request.fileId() == null)) {
             throw new CustomException(ErrorType.REQUEST_VALIDATION_EXCEPTION);
         }
 
@@ -65,23 +64,29 @@ public class ChatMessageService {
         String contextString = chatAnalysisService.buildContextString(recentMessages);
 
         // 4. 사용자 메시지 저장
+        String content = (request.content() != null && !request.content().isBlank())
+                ? request.content() : null;
+        MessageType messageType = (content == null && request.fileId() != null)
+                ? MessageType.FILE : MessageType.TEXT;
+
         ChatMessage userMessage = chatMessageRepository.save(
                 ChatMessage.builder()
                         .user(chatSession.getUser())
                         .session(chatSession)
                         .senderRole(SenderRole.USER)
-                        .messageType(MessageType.TEXT)
-                        .content(request.content())
+                        .messageType(messageType)
+                        .content(content)
                         .build()
         );
 
         // 5. AiRequest 생성 (ANALYZING)
+        String prompt = content != null ? content : "(파일 첨부)";
         AiRequest aiRequest = aiRequestRepository.save(
                 AiRequest.builder()
                         .user(chatSession.getUser())
                         .session(chatSession)
                         .message(userMessage)
-                        .prompt(request.content())
+                        .prompt(prompt)
                         .status(AiRequestStatus.ANALYZING)
                         .build()
         );
@@ -102,7 +107,7 @@ public class ChatMessageService {
         final Long aiRequestId = aiRequest.getId();
         final Long finalUserId = userId;
         final Long finalSessionId = sessionId;
-        final String finalContent = request.content();
+        final String finalContent = prompt;
         final String finalContext = contextString;
 
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
