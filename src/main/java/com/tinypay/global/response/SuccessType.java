@@ -30,7 +30,10 @@ public enum SuccessType {
     GET_CHAT_MESSAGE_LIST_SUCCESS(HttpStatus.OK, "채팅 메시지 조회에 성공했습니다."),
     GET_AI_REQUEST_STATUS_SUCCESS(HttpStatus.OK, "AI 요청 상태를 조회했습니다."),
     CANCEL_AI_REQUEST_SUCCESS(HttpStatus.OK, "AI 요청이 취소되었습니다."),
-    GET_PAYMENT_DETAIL_SUCCESS(HttpStatus.OK, "결제 내역 세부 조회에 성공했습니다.")
+    GET_PAYMENT_DETAIL_SUCCESS(HttpStatus.OK, "결제 내역 세부 조회에 성공했습니다."),
+    GET_UPLOAD_PRESIGNED_URL_SUCCESS(HttpStatus.OK, "업로드 URL 발급에 성공했습니다."),
+    CONFIRM_UPLOAD_SUCCESS(HttpStatus.CREATED, "파일 정보 저장에 성공했습니다."),
+    GET_DOWNLOAD_PRESIGNED_URL_SUCCESS(HttpStatus.OK, "다운로드 URL 발급에 성공했습니다.")
     ;
 
     private final HttpStatus httpStatus;

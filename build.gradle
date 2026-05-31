@@ -30,8 +30,8 @@ dependencies {
 
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
-//	implementation platform('io.awspring.cloud:spring-cloud-aws-dependencies:4.0.2')
-//	implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3'
+	implementation platform('io.awspring.cloud:spring-cloud-aws-dependencies:4.0.2')
+	implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3'
 
 	// JWT
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
