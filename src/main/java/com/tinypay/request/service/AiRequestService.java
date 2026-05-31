@@ -61,7 +61,6 @@ public class AiRequestService {
         chatMessageRepository.save(
                 ChatMessage.builder()
                         .session(aiRequest.getSession())
-                        .request(aiRequest)
                         .senderRole(SenderRole.ASSISTANT)
                         .messageType(MessageType.TEXT)
                         .content("결제 요청이 취소되었습니다.")

@@ -13,6 +13,7 @@ import com.tinypay.dify.repository.AiRequestApiItemRepository;
 import com.tinypay.dify.repository.AiRequestRepository;
 import com.tinypay.global.exception.CustomException;
 import com.tinypay.global.exception.ErrorType;
+import com.tinypay.request.dto.AiRequestResponseStatus;
 import com.tinypay.request.dto.ApiItemResponse;
 import com.tinypay.user.repository.UserRepository;
 import com.tinypay.dify.domain.AiRequest;
@@ -132,15 +133,19 @@ public class ChatMessageService {
                     AiRequest request = message.getRequest();
                     List<ApiItemResponse> apiItems = null;
                     java.math.BigDecimal totalEstimatedCost = null;
+                    AiRequestResponseStatus requestStatus = null;
 
-                    if (request != null
-                            && message.getSenderRole() == SenderRole.ASSISTANT
-                            && request.getStatus() == AiRequestStatus.WAITING_APPROVAL) {
-                        apiItems = aiRequestApiItemRepository.findAllByRequestOrderByExecutionOrderAsc(request)
-                                .stream()
-                                .map(ApiItemResponse::from)
-                                .toList();
-                        totalEstimatedCost = request.getEstimatedTotalCost();
+                    if (request != null && message.getSenderRole() == SenderRole.ASSISTANT) {
+                        requestStatus = AiRequestResponseStatus.from(request.getStatus());
+
+                        if (request.getStatus() == AiRequestStatus.WAITING_APPROVAL
+                                || request.getStatus() == AiRequestStatus.CANCELLED) {
+                            apiItems = aiRequestApiItemRepository.findAllByRequestOrderByExecutionOrderAsc(request)
+                                    .stream()
+                                    .map(ApiItemResponse::from)
+                                    .toList();
+                            totalEstimatedCost = request.getEstimatedTotalCost();
+                        }
                     }
 
                     return new GetChatMessageResponse(
@@ -149,6 +154,7 @@ public class ChatMessageService {
                             message.getMessageType(),
                             message.getContent(),
                             request != null ? request.getId() : null,
+                            requestStatus,
                             apiItems,
                             totalEstimatedCost,
                             message.getCreatedAt()

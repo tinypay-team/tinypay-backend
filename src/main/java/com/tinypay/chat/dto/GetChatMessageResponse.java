@@ -3,6 +3,7 @@ package com.tinypay.chat.dto;
 import com.tinypay.chat.domain.MessageType;
 import com.tinypay.chat.domain.SenderRole;
 import com.tinypay.request.dto.ApiItemResponse;
+import com.tinypay.request.dto.AiRequestResponseStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -14,6 +15,7 @@ public record GetChatMessageResponse(
         MessageType messageType,
         String content,
         Long requestId,
+        AiRequestResponseStatus requestStatus,
         List<ApiItemResponse> apiItems,
         BigDecimal totalEstimatedCost,
         LocalDateTime createdAt
