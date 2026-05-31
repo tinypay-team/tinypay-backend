@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class LoginRequest {
 
-    @NotBlank(message = "id_token이 존재하지 않습니다.")
+    @NotBlank(message = "id token이 존재하지 않습니다.")
     @JsonProperty("id_token")
     private String idToken;
 }

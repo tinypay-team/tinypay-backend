@@ -33,9 +33,6 @@ public class AuthService {
 
     @Transactional
     public LoginResponse googleLogin(LoginRequest request) {
-        if (!StringUtils.hasText(request.getIdToken())) {
-            throw new CustomException(ErrorType.MISSING_ID_TOKEN);
-        }
 
         GoogleUserInfo userInfo = googleIdTokenVerifier.verify(request.getIdToken());
 
