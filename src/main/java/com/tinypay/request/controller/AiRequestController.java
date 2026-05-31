@@ -19,4 +19,10 @@ public class AiRequestController {
     public ResponseEntity<ApiResponse<GetAiRequestStatusResponse>> getAiRequestStatus(@RequestAttribute("userId") Long userId, @PathVariable Long requestId) {
         return ResponseEntity.ok(ApiResponse.success(SuccessType.GET_AI_REQUEST_STATUS_SUCCESS, aiRequestService.getAiRequestStatus(userId, requestId)));
     }
+
+    @PatchMapping("/{requestId}/cancel")
+    public ResponseEntity<ApiResponse<?>> cancelAiRequest(@RequestAttribute("userId") Long userId, @PathVariable Long requestId) {
+        aiRequestService.cancelAiRequest(userId, requestId);
+        return ResponseEntity.ok(ApiResponse.success(SuccessType.CANCEL_AI_REQUEST_SUCCESS));
+    }
 }
