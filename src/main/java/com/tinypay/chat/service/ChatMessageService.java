@@ -7,8 +7,10 @@ import com.tinypay.chat.domain.SenderRole;
 import com.tinypay.chat.dto.CreateChatMessageRequest;
 import com.tinypay.chat.dto.CreateChatMessageResponse;
 import com.tinypay.chat.dto.GetChatMessageResponse;
+import com.tinypay.chat.domain.FileAttachment;
 import com.tinypay.chat.repository.ChatMessageRepository;
 import com.tinypay.chat.repository.ChatSessionRepository;
+import com.tinypay.chat.repository.FileAttachmentRepository;
 import com.tinypay.dify.repository.AiRequestApiItemRepository;
 import com.tinypay.dify.repository.AiRequestRepository;
 import com.tinypay.global.exception.CustomException;
@@ -39,6 +41,7 @@ public class ChatMessageService {
     private final ChatSessionRepository chatSessionRepository;
     private final AiRequestRepository aiRequestRepository;
     private final AiRequestApiItemRepository aiRequestApiItemRepository;
+    private final FileAttachmentRepository fileAttachmentRepository;
     private final ChatAnalysisService chatAnalysisService;
     private final DifyAsyncService difyAsyncService;
     private final UserRepository userRepository;
@@ -85,6 +88,14 @@ public class ChatMessageService {
 
         // userMessage ↔ aiRequest 양방향 연결
         userMessage.connectRequest(aiRequest);
+
+        // 파일 첨부가 있는 경우 메시지에 연결
+        if (request.fileId() != null) {
+            FileAttachment file = fileAttachmentRepository.findById(request.fileId())
+                    .orElseThrow(() -> new CustomException(ErrorType.FILE_NOT_FOUND));
+            file.connectMessage(userMessage);
+        }
+
         chatMessageRepository.save(userMessage);
 
         // 6. 비동기 Dify 분석 트리거
@@ -148,6 +159,11 @@ public class ChatMessageService {
                         }
                     }
 
+                    // 첨부파일 조회 (있을 수도 없을 수도 있음)
+                    FileAttachment file = fileAttachmentRepository
+                            .findByMessage_Id(message.getId())
+                            .orElse(null);
+
                     return new GetChatMessageResponse(
                             message.getId(),
                             message.getSenderRole(),
@@ -157,6 +173,9 @@ public class ChatMessageService {
                             requestStatus,
                             apiItems,
                             totalEstimatedCost,
+                            file != null ? file.getId() : null,
+                            file != null ? file.getFileName() : null,
+                            file != null ? file.getFileType() : null,
                             message.getCreatedAt()
                     );
                 })

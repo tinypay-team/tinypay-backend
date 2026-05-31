@@ -18,6 +18,9 @@ public record GetChatMessageResponse(
         AiRequestResponseStatus requestStatus,
         List<ApiItemResponse> apiItems,
         BigDecimal totalEstimatedCost,
+        Long fileId,        // 첨부파일 있을 때만 포함 (없으면 null)
+        String fileName,    // 첨부파일 이름 (없으면 null)
+        String fileType,    // 첨부파일 MIME 타입 (없으면 null)
         LocalDateTime createdAt
 ) {
 }
