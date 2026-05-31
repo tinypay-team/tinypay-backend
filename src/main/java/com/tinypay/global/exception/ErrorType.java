@@ -35,6 +35,7 @@ public enum ErrorType {
      * HTTP 403 (FORBIDDEN)
      */
     REQUEST_FORBIDDEN(HttpStatus.FORBIDDEN, "해당 요청에 대한 접근 권한이 없습니다."),
+    PAYMENT_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "해당 결제 내역에 접근할 수 없습니다."),
     
     /**
      * HTTP 404 (NOT FOUND)
@@ -43,6 +44,7 @@ public enum ErrorType {
     CHAT_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 채팅 세션입니다."),
     AI_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 AI 요청입니다."),
     WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "지갑을 찾을 수 없습니다."),
+    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "결제 내역을 찾을 수 없습니다."),
 
     /**
      * HTTP 409 (CONFLICT)
