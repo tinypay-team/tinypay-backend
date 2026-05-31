@@ -1,5 +1,6 @@
 package com.tinypay.finance.controller;
 
+import com.tinypay.finance.dto.response.GetPaymentDetailResponse;
 import com.tinypay.finance.dto.response.GetPaymentListResponse;
 import com.tinypay.finance.service.PaymentService;
 import com.tinypay.global.response.ApiResponse;
@@ -20,5 +21,12 @@ public class PaymentController {
             @RequestAttribute("userId") Long userId,
             @RequestParam(required = false) Long cursor) {
         return ApiResponse.success(SuccessType.GET_PAYMENT_LIST_SUCCESS, paymentService.getPaymentList(userId, cursor));
+    }
+
+    @GetMapping("/{paymentId}")
+    public ApiResponse<GetPaymentDetailResponse> getPaymentDetail(
+            @RequestAttribute("userId") Long userId,
+            @PathVariable Long paymentId) {
+        return ApiResponse.success(SuccessType.GET_PAYMENT_DETAIL_SUCCESS, paymentService.getPaymentDetail(userId, paymentId));
     }
 }
