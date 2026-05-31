@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class PaymentApproveRequest {
 
-    @NotNull
-    @DecimalMin(value = "0.0", inclusive = false)
+    @NotNull(message = "예상 금액이 존재하지 않습니다.")
+    @DecimalMin(value = "0.0", inclusive = false, message = "예상 금액은 0보다 커야합니다.")
     private BigDecimal estimatedCost;
 }

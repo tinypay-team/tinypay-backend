@@ -13,9 +13,8 @@ public enum ErrorType {
      * HTTP 400 (BAD REQUEST)
      */
     REQUEST_VALIDATION_EXCEPTION(HttpStatus.BAD_REQUEST, "잘못된 요청입니다"),
-    MISSING_ID_TOKEN(HttpStatus.BAD_REQUEST, "id_token이 존재하지 않습니다."),
 
-    MISSING_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "refresh_token이 존재하지 않습니다."),
+    MISSING_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "refresh token이 존재하지 않습니다."),
     MISSING_ACCESS_TOKEN(HttpStatus.BAD_REQUEST, "access token이 존재하지 않습니다."),
     INVALID_TOKEN_FORMAT(HttpStatus.BAD_REQUEST, "token 형식이 올바르지 않습니다."),
     ESTIMATED_COST_MISMATCH(HttpStatus.BAD_REQUEST, "예상 결제 금액이 일치하지 않습니다."),

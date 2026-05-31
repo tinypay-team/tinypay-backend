@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Getter
 @Entity
@@ -40,6 +41,12 @@ public class Wallet extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "wallet_status", nullable = false)
     private WalletStatus walletStatus;
+
+    @Column(name = "wallet_password")
+    private String walletPassword;
+
+    @Column(name = "wallet_password_created_at")
+    private LocalDateTime walletPasswordCreatedAt;
 
     @Builder
     public Wallet(User user, String walletAddress, String privateKeyEncrypted, String blockchainNetwork, BigDecimal balance, WalletStatus walletStatus
