@@ -49,7 +49,6 @@ public enum ErrorType {
      */
     DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다."),
     INVALID_REQUEST_STATUS(HttpStatus.CONFLICT, "승인 가능한 상태의 요청이 아닙니다."),
-    CANCEL_NOT_ALLOWED(HttpStatus.CONFLICT, "취소 가능한 상태의 요청이 아닙니다."),
 
     /**
      * HTTP 500 (INTERNAL SERVER ERROR)
