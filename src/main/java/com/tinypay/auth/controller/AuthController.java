@@ -2,6 +2,7 @@ package com.tinypay.auth.controller;
 
 import com.tinypay.auth.dto.request.LoginRequest;
 import com.tinypay.auth.dto.request.SendVerificationCodeRequest;
+import com.tinypay.auth.dto.request.VerifyCodeRequest;
 import com.tinypay.auth.dto.response.LoginResponse;
 import com.tinypay.auth.dto.response.TokenRefreshResponse;
 import com.tinypay.auth.service.AuthService;
@@ -30,6 +31,14 @@ public class AuthController {
             @Valid @RequestBody SendVerificationCodeRequest request) {
         authService.sendVerificationCode(request);
         return ApiResponse.success(SuccessType.SEND_VERIFICATION_CODE_SUCCESS);
+    }
+
+    @PostMapping("/verification-code/verify")
+    public ApiResponse<?> verifyPhoneNumber(
+            @RequestAttribute("userId") Long userId,
+            @Valid @RequestBody VerifyCodeRequest request) {
+        authService.verifyPhoneNumber(userId, request);
+        return ApiResponse.success(SuccessType.VERIFY_PHONE_NUMBER_SUCCESS);
     }
 
     @DeleteMapping

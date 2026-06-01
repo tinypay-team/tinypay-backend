@@ -3,6 +3,7 @@ package com.tinypay.auth.service;
 import com.tinypay.auth.domain.RefreshToken;
 import com.tinypay.auth.dto.request.LoginRequest;
 import com.tinypay.auth.dto.request.SendVerificationCodeRequest;
+import com.tinypay.auth.dto.request.VerifyCodeRequest;
 import com.tinypay.auth.dto.response.LoginResponse;
 import com.tinypay.auth.dto.response.TokenRefreshResponse;
 import com.tinypay.auth.google.GoogleIdTokenVerifier;
@@ -77,7 +78,41 @@ public class AuthService {
     }
 
     public void sendVerificationCode(SendVerificationCodeRequest request) {
-        smsService.sendVerificationCode(request.getPhoneNumber());
+        String phoneNumber = request.getPhoneNumber();
+        if (smsService.isBlocked(phoneNumber)) {
+            throw new CustomException(ErrorType.VERIFICATION_BLOCKED);
+        }
+        smsService.sendVerificationCode(phoneNumber);
+    }
+
+    @Transactional
+    public void verifyPhoneNumber(Long userId, VerifyCodeRequest request) {
+        String phoneNumber = request.getPhoneNumber();
+
+        if (smsService.isBlocked(phoneNumber)) {
+            throw new CustomException(ErrorType.VERIFICATION_BLOCKED);
+        }
+
+        String storedCode = smsService.getStoredCode(phoneNumber);
+
+        if (storedCode == null) {
+            throw new CustomException(ErrorType.VERIFICATION_CODE_NOT_FOUND);
+        }
+
+        if (!storedCode.equals(request.getVerificationCode())) {
+            String blockMessage = smsService.handleFailedAttempt(phoneNumber);
+            if (blockMessage != null) {
+                throw new CustomException(ErrorType.VERIFICATION_BLOCKED, blockMessage);
+            }
+            throw new CustomException(ErrorType.INVALID_VERIFICATION_CODE);
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorType.USER_NOT_FOUND));
+
+        user.verifyPhone(phoneNumber);
+        smsService.deleteCode(phoneNumber);
+        smsService.clearAttempts(phoneNumber);
     }
 
     @Transactional
