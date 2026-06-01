@@ -61,6 +61,8 @@ public enum ErrorType {
      * HTTP 429 (Too Many Requests)
      */
     VERIFICATION_BLOCKED(HttpStatus.TOO_MANY_REQUESTS, "인증 시도 횟수를 초과했습니다."),
+    VERIFICATION_CODE_COOLDOWN(HttpStatus.TOO_MANY_REQUESTS, "인증번호는 1분 후에 재발급할 수 있습니다."),
+    VERIFICATION_SEND_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "인증번호 발급 횟수를 초과했습니다. 24시간 후 다시 시도해주세요."),
 
     /**
      * HTTP 500 (INTERNAL SERVER ERROR)

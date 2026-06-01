@@ -20,9 +20,14 @@ public class SmsService {
     private static final int CODE_LENGTH = 6;
     private static final long CODE_TTL_MINUTES = 5;
     private static final long ATTEMPTS_TTL_DAYS = 7;
+    private static final int MAX_SEND_COUNT = 10;
+    private static final long SEND_COUNT_TTL_HOURS = 24;
+    private static final long COOLDOWN_SECONDS = 60;
     private static final String REDIS_KEY_PREFIX = "sms:verify:";
     private static final String ATTEMPTS_KEY_PREFIX = "sms:attempts:";
     private static final String BLOCKED_KEY_PREFIX = "sms:blocked:";
+    private static final String COOLDOWN_KEY_PREFIX = "sms:cooldown:";
+    private static final String SEND_COUNT_KEY_PREFIX = "sms:send-count:";
 
     private final DefaultMessageService defaultMessageService;
     private final StringRedisTemplate stringRedisTemplate;
@@ -31,8 +36,12 @@ public class SmsService {
     private String fromNumber;
 
     public void sendVerificationCode(String phoneNumber) {
+        checkSendLimit(phoneNumber);
+        checkCooldown(phoneNumber);
+
         String code = generateCode();
 
+        stringRedisTemplate.delete(REDIS_KEY_PREFIX + phoneNumber);
         stringRedisTemplate.opsForValue().set(
                 REDIS_KEY_PREFIX + phoneNumber,
                 code,
@@ -49,6 +58,26 @@ public class SmsService {
             stringRedisTemplate.delete(REDIS_KEY_PREFIX + phoneNumber);
             throw new CustomException(ErrorType.SMS_SEND_FAILED);
         }
+
+        stringRedisTemplate.opsForValue().set(
+                COOLDOWN_KEY_PREFIX + phoneNumber, "1", Duration.ofSeconds(COOLDOWN_SECONDS));
+        Long sendCount = stringRedisTemplate.opsForValue().increment(SEND_COUNT_KEY_PREFIX + phoneNumber);
+        if (sendCount == 1) {
+            stringRedisTemplate.expire(SEND_COUNT_KEY_PREFIX + phoneNumber, Duration.ofHours(SEND_COUNT_TTL_HOURS));
+        }
+    }
+
+    private void checkCooldown(String phoneNumber) {
+        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(COOLDOWN_KEY_PREFIX + phoneNumber))) {
+            throw new CustomException(ErrorType.VERIFICATION_CODE_COOLDOWN);
+        }
+    }
+
+    private void checkSendLimit(String phoneNumber) {
+        String countStr = stringRedisTemplate.opsForValue().get(SEND_COUNT_KEY_PREFIX + phoneNumber);
+        if (countStr != null && Long.parseLong(countStr) >= MAX_SEND_COUNT) {
+            throw new CustomException(ErrorType.VERIFICATION_SEND_LIMIT_EXCEEDED);
+        }
     }
 
     public String getStoredCode(String phoneNumber) {
@@ -63,6 +92,10 @@ public class SmsService {
         return Boolean.TRUE.equals(stringRedisTemplate.hasKey(BLOCKED_KEY_PREFIX + phoneNumber));
     }
 
+    public String getBlockMessage(String phoneNumber) {
+        return stringRedisTemplate.opsForValue().get(BLOCKED_KEY_PREFIX + phoneNumber);
+    }
+
     public String handleFailedAttempt(String phoneNumber) {
         String attemptsKey = ATTEMPTS_KEY_PREFIX + phoneNumber;
         Long attempts = stringRedisTemplate.opsForValue().increment(attemptsKey);
@@ -73,7 +106,7 @@ public class SmsService {
             Duration blockDuration = resolveBlockDuration(attempts);
             stringRedisTemplate.opsForValue().set(
                     BLOCKED_KEY_PREFIX + phoneNumber,
-                    "blocked",
+                    blockMessage,
                     blockDuration
             );
             stringRedisTemplate.delete(REDIS_KEY_PREFIX + phoneNumber);

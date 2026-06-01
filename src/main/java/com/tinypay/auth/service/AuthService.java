@@ -80,7 +80,7 @@ public class AuthService {
     public void sendVerificationCode(SendVerificationCodeRequest request) {
         String phoneNumber = request.getPhoneNumber();
         if (smsService.isBlocked(phoneNumber)) {
-            throw new CustomException(ErrorType.VERIFICATION_BLOCKED);
+            throw new CustomException(ErrorType.VERIFICATION_BLOCKED, smsService.getBlockMessage(phoneNumber));
         }
         smsService.sendVerificationCode(phoneNumber);
     }
@@ -90,7 +90,7 @@ public class AuthService {
         String phoneNumber = request.getPhoneNumber();
 
         if (smsService.isBlocked(phoneNumber)) {
-            throw new CustomException(ErrorType.VERIFICATION_BLOCKED);
+            throw new CustomException(ErrorType.VERIFICATION_BLOCKED, smsService.getBlockMessage(phoneNumber));
         }
 
         String storedCode = smsService.getStoredCode(phoneNumber);
