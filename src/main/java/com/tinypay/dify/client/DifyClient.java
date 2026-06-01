@@ -7,6 +7,9 @@ import com.tinypay.dify.dto.ChatAnalysisResponse;
 import com.tinypay.dify.dto.DifyWorkflowResponse;
 import com.tinypay.global.exception.CustomException;
 import com.tinypay.global.exception.ErrorType;
+import com.tinypay.security.validation.DifyResponseValidator;
+import com.tinypay.security.validation.ValidationResult;
+import com.tinypay.security.validation.ValidationSeverity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -23,6 +26,7 @@ public class DifyClient {
 
     private final DifyProperties difyProperties;
     private final RestClient restClient;
+    private final DifyResponseValidator difyResponseValidator;
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     public ChatAnalysisResponse runChatAnalysis(ChatAnalysisRequest request) {
@@ -53,7 +57,24 @@ public class DifyClient {
             }
 
             log.info("[DifyClient] 분석 완료: responseType={}", outputs.responseType());
-            return new ChatAnalysisResponse(200, "success", outputs);
+
+            // ===== 보안: Dify 응답 검증 =====
+            ChatAnalysisResponse analysisResponse = new ChatAnalysisResponse(200, "success", outputs);
+            ValidationResult validation = difyResponseValidator.validate(analysisResponse);
+
+            if (!validation.isSafe()) {
+                log.warn("[DifyClient] 응답 검증 실패: severity={}, rules={}, reason={}",
+                        validation.getSeverity(),
+                        validation.getMatchedRules(),
+                        validation.getReason());
+
+                if (validation.getSeverity() == ValidationSeverity.HIGH
+                        || validation.getSeverity() == ValidationSeverity.CRITICAL) {
+                    throw new CustomException(ErrorType.DIFY_RESPONSE_INVALID);
+                }
+            }
+
+            return analysisResponse;
 
         } catch (CustomException e) {
             throw e;
