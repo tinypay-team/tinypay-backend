@@ -19,6 +19,8 @@ public enum ErrorType {
     INVALID_TOKEN_FORMAT(HttpStatus.BAD_REQUEST, "token 형식이 올바르지 않습니다."),
     MISSING_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "전화번호가 존재하지 않습니다."),
     INVALID_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "전화번호 형식이 올바르지 않습니다."),
+    MISSING_WALLET_PIN(HttpStatus.BAD_REQUEST, "지갑 비밀번호가 존재하지 않습니다."),
+    INVALID_WALLET_PIN(HttpStatus.BAD_REQUEST, "지갑 비밀번호는 6자리 숫자여야 합니다."),
     MISSING_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, "인증번호가 존재하지 않습니다."),
     INVALID_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, "인증번호가 일치하지 않습니다."),
     ESTIMATED_COST_MISMATCH(HttpStatus.BAD_REQUEST, "예상 결제 금액이 일치하지 않습니다."),
@@ -38,6 +40,7 @@ public enum ErrorType {
      * HTTP 403 (FORBIDDEN)
      */
     REQUEST_FORBIDDEN(HttpStatus.FORBIDDEN, "해당 요청에 대한 접근 권한이 없습니다."),
+    PHONE_NOT_VERIFIED(HttpStatus.FORBIDDEN, "전화번호 인증이 완료되지 않은 사용자입니다."),
     PAYMENT_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "해당 결제 내역에 접근할 수 없습니다."),
     
     /**

@@ -36,6 +36,7 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
 	implementation 'net.nurigo:sdk:4.3.0'
+	implementation 'org.springframework.security:spring-security-crypto'
 
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'

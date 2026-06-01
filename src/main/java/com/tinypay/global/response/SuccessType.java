@@ -33,7 +33,8 @@ public enum SuccessType {
     GET_PAYMENT_DETAIL_SUCCESS(HttpStatus.OK, "결제 내역 세부 조회에 성공했습니다."),
     GET_WALLET_SUCCESS(HttpStatus.OK, "내 지갑 정보 조회에 성공했습니다."),
     SEND_VERIFICATION_CODE_SUCCESS(HttpStatus.OK, "인증번호가 발송되었습니다."),
-    VERIFY_PHONE_NUMBER_SUCCESS(HttpStatus.OK, "전화번호 인증이 완료되었습니다.")
+    VERIFY_PHONE_NUMBER_SUCCESS(HttpStatus.OK, "전화번호 인증이 완료되었습니다."),
+    CREATE_WALLET_SUCCESS(HttpStatus.CREATED, "지갑 생성에 성공했습니다.")
     ;
 
     private final HttpStatus httpStatus;
