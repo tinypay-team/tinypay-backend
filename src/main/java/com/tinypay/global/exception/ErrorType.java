@@ -19,6 +19,8 @@ public enum ErrorType {
     INVALID_TOKEN_FORMAT(HttpStatus.BAD_REQUEST, "token 형식이 올바르지 않습니다."),
     MISSING_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "전화번호가 존재하지 않습니다."),
     INVALID_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "전화번호 형식이 올바르지 않습니다."),
+    MISSING_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, "인증번호가 존재하지 않습니다."),
+    INVALID_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, "인증번호가 일치하지 않습니다."),
     ESTIMATED_COST_MISMATCH(HttpStatus.BAD_REQUEST, "예상 결제 금액이 일치하지 않습니다."),
     PER_REQUEST_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "건당 결제 한도를 초과했습니다."),
     MONTHLY_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "월 결제 한도를 초과했습니다."),
@@ -45,6 +47,7 @@ public enum ErrorType {
     CHAT_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 채팅 세션입니다."),
     AI_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 AI 요청입니다."),
     WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "지갑을 찾을 수 없습니다."),
+    VERIFICATION_CODE_NOT_FOUND(HttpStatus.NOT_FOUND, "인증번호가 유효하지 않습니다. 인증번호를 다시 요청해주세요."),
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "결제 내역을 찾을 수 없습니다."),
 
     /**
@@ -53,6 +56,11 @@ public enum ErrorType {
     DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다."),
     INVALID_REQUEST_STATUS(HttpStatus.CONFLICT, "승인 가능한 상태의 요청이 아닙니다."),
     CANCEL_NOT_ALLOWED(HttpStatus.CONFLICT, "취소 가능한 상태의 요청이 아닙니다."),
+
+    /**
+     * HTTP 429 (Too Many Requests)
+     */
+    VERIFICATION_BLOCKED(HttpStatus.TOO_MANY_REQUESTS, "인증 시도 횟수를 초과했습니다."),
 
     /**
      * HTTP 500 (INTERNAL SERVER ERROR)

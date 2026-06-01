@@ -18,8 +18,11 @@ import java.time.Duration;
 public class SmsService {
 
     private static final int CODE_LENGTH = 6;
-    private static final long CODE_TTL_MINUTES = 3;
+    private static final long CODE_TTL_MINUTES = 5;
+    private static final long ATTEMPTS_TTL_DAYS = 7;
     private static final String REDIS_KEY_PREFIX = "sms:verify:";
+    private static final String ATTEMPTS_KEY_PREFIX = "sms:attempts:";
+    private static final String BLOCKED_KEY_PREFIX = "sms:blocked:";
 
     private final DefaultMessageService defaultMessageService;
     private final StringRedisTemplate stringRedisTemplate;
@@ -54,6 +57,47 @@ public class SmsService {
 
     public void deleteCode(String phoneNumber) {
         stringRedisTemplate.delete(REDIS_KEY_PREFIX + phoneNumber);
+    }
+
+    public boolean isBlocked(String phoneNumber) {
+        return Boolean.TRUE.equals(stringRedisTemplate.hasKey(BLOCKED_KEY_PREFIX + phoneNumber));
+    }
+
+    public String handleFailedAttempt(String phoneNumber) {
+        String attemptsKey = ATTEMPTS_KEY_PREFIX + phoneNumber;
+        Long attempts = stringRedisTemplate.opsForValue().increment(attemptsKey);
+        stringRedisTemplate.expire(attemptsKey, Duration.ofDays(ATTEMPTS_TTL_DAYS));
+
+        String blockMessage = resolveBlockMessage(attempts);
+        if (blockMessage != null) {
+            Duration blockDuration = resolveBlockDuration(attempts);
+            stringRedisTemplate.opsForValue().set(
+                    BLOCKED_KEY_PREFIX + phoneNumber,
+                    "blocked",
+                    blockDuration
+            );
+            stringRedisTemplate.delete(REDIS_KEY_PREFIX + phoneNumber);
+        }
+        return blockMessage;
+    }
+
+    private String resolveBlockMessage(Long attempts) {
+        if (attempts == null) return null;
+        if (attempts >= 10) return "인증 시도 횟수를 초과했습니다. 24시간 후 다시 시도해주세요.";
+        if (attempts >= 8) return "인증 시도 횟수를 초과했습니다. 1시간 후 다시 시도해주세요.";
+        if (attempts >= 5) return "인증 시도 횟수를 초과했습니다. 30분 후 다시 시도해주세요.";
+        return null;
+    }
+
+    private Duration resolveBlockDuration(Long attempts) {
+        if (attempts == null) return Duration.ofMinutes(30);
+        if (attempts >= 10) return Duration.ofHours(24);
+        if (attempts >= 8) return Duration.ofHours(1);
+        return Duration.ofMinutes(30);
+    }
+
+    public void clearAttempts(String phoneNumber) {
+        stringRedisTemplate.delete(ATTEMPTS_KEY_PREFIX + phoneNumber);
     }
 
     private String generateCode() {

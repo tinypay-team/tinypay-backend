@@ -35,5 +35,5 @@ public enum AbuseType {
     // ===== 일반 =====
 
     /** 짧은 시간 내 반복 요청 (Rate Limit 초과) */
-    RATE_LIMIT_EXCEEDED
+    RATE_LIMIT_EXCEEDED,
 }

@@ -56,6 +56,12 @@ public class User extends BaseTimeEntity {
         this.profileImageUrl = profileImageUrl;
     }
 
+    public void verifyPhone(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+        this.phoneVerified = true;
+        this.phoneVerifiedAt = LocalDateTime.now();
+    }
+
     public void softDelete() {
         this.deletedAt = LocalDateTime.now();
     }
