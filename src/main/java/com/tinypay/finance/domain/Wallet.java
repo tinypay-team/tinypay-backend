@@ -63,6 +63,11 @@ public class Wallet extends BaseTimeEntity {
         this.balance = balance;
     }
 
+    public void initializePin(String hashedPin) {
+        this.walletPassword = hashedPin;
+        this.walletPasswordCreatedAt = LocalDateTime.now();
+    }
+
     public void disconnect() {
         this.walletStatus = WalletStatus.DISCONNECTED;
     }
