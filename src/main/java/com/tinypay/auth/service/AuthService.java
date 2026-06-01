@@ -2,6 +2,7 @@ package com.tinypay.auth.service;
 
 import com.tinypay.auth.domain.RefreshToken;
 import com.tinypay.auth.dto.request.LoginRequest;
+import com.tinypay.auth.dto.request.SendVerificationCodeRequest;
 import com.tinypay.auth.dto.response.LoginResponse;
 import com.tinypay.auth.dto.response.TokenRefreshResponse;
 import com.tinypay.auth.google.GoogleIdTokenVerifier;
@@ -30,6 +31,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final BudgetPolicyRepository budgetPolicyRepository;
+    private final SmsService smsService;
 
     @Transactional
     public LoginResponse googleLogin(LoginRequest request) {
@@ -72,6 +74,10 @@ public class AuthService {
                         .profileImage(user.getProfileImageUrl())
                         .build())
                 .build();
+    }
+
+    public void sendVerificationCode(SendVerificationCodeRequest request) {
+        smsService.sendVerificationCode(request.getPhoneNumber());
     }
 
     @Transactional

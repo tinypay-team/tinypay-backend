@@ -17,6 +17,8 @@ public enum ErrorType {
     MISSING_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "refresh token이 존재하지 않습니다."),
     MISSING_ACCESS_TOKEN(HttpStatus.BAD_REQUEST, "access token이 존재하지 않습니다."),
     INVALID_TOKEN_FORMAT(HttpStatus.BAD_REQUEST, "token 형식이 올바르지 않습니다."),
+    MISSING_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "전화번호가 존재하지 않습니다."),
+    INVALID_PHONE_NUMBER(HttpStatus.BAD_REQUEST, "전화번호 형식이 올바르지 않습니다."),
     ESTIMATED_COST_MISMATCH(HttpStatus.BAD_REQUEST, "예상 결제 금액이 일치하지 않습니다."),
     PER_REQUEST_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "건당 결제 한도를 초과했습니다."),
     MONTHLY_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "월 결제 한도를 초과했습니다."),
@@ -56,6 +58,7 @@ public enum ErrorType {
      * HTTP 500 (INTERNAL SERVER ERROR)
      */
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "알 수 없는 서버 에러가 발생했습니다."),
+    SMS_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "인증번호 발송에 실패했습니다."),
 
     /**
      * HTTP 502 (BAD GATEWAY) - 외부 API 오류

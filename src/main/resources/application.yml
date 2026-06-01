@@ -40,7 +40,12 @@ google:
         pool:
           max-active: 8
           max-idle: 8
-          min-idle: 0  
+          min-idle: 0
+
+coolsms:
+  api-key: NCSGULAWY71JRQXB
+  api-secret: YF7KIZFCQYY22W4BFQT9SOLCJHIP3FQB
+  from-number: "01056021260"
 
 dify:
   base-url: ${DIFY_BASE_URL}
