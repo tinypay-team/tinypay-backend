@@ -31,6 +31,9 @@ public enum AbuseType {
 
     /** 프롬프트 인젝션 시도 */
     PROMPT_INJECTION,
+    
+    /** Dify 응답 검증 실패 (responseType/비용/필드 조작) */
+    DIFY_RESPONSE_MANIPULATION,
 
     // ===== 일반 =====
 
