@@ -20,6 +20,11 @@ import com.tinypay.finance.domain.Wallet;
 import com.tinypay.finance.domain.WalletStatus;
 import com.tinypay.finance.repository.WalletRepository;
 import com.tinypay.global.common.auth.PaymentAuthContext;
+import com.tinypay.user.domain.User;
+import com.tinypay.user.repository.UserRepository;
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,13 +42,17 @@ import java.math.BigInteger;
 @Service
 public class BlockchainServiceImpl implements BlockchainService {
 
+    private static final Logger log = LoggerFactory.getLogger(BlockchainServiceImpl.class);
+
     private final Web3j web3j;
     private final Credentials credentials;
     private final MockUSDC mockUSDC;
     private final TinyPayment tinyPayment;
+    private final String tinyPaymentAddress;
     private final ReceiptVerifier receiptVerifier;
     private final KeyEncryptor keyEncryptor;
     private final WalletRepository walletRepository;
+    private final UserRepository userRepository;
     private final AbuseLogRepository abuseLogRepository;
 
     private static final int USDC_DECIMALS = 6;
@@ -56,6 +65,7 @@ public class BlockchainServiceImpl implements BlockchainService {
             ReceiptVerifier receiptVerifier,
             KeyEncryptor keyEncryptor,
             WalletRepository walletRepository,
+            UserRepository userRepository,
             AbuseLogRepository abuseLogRepository,
             @Value("${blockchain.mock-usdc-address}") String mockUsdcAddress,
             @Value("${blockchain.tiny-payment-address}") String tinyPaymentAddress
@@ -65,11 +75,24 @@ public class BlockchainServiceImpl implements BlockchainService {
         this.receiptVerifier = receiptVerifier;
         this.keyEncryptor = keyEncryptor;
         this.walletRepository = walletRepository;
+        this.userRepository = userRepository;
         this.abuseLogRepository = abuseLogRepository;
+        this.tinyPaymentAddress = tinyPaymentAddress;
         this.mockUSDC = MockUSDC.load(
                 mockUsdcAddress, web3j, txManager, gasProvider);
         this.tinyPayment = TinyPayment.load(
                 tinyPaymentAddress, web3j, txManager, gasProvider);
+    }
+
+    @PostConstruct
+    public void approveSpender() {
+        try {
+            BigInteger maxAllowance = BigInteger.TWO.pow(256).subtract(BigInteger.ONE);
+            mockUSDC.approve(tinyPaymentAddress, maxAllowance).send();
+            log.info("TinyPayment 컨트랙트 approve 완료: spender={}", tinyPaymentAddress);
+        } catch (Exception e) {
+            log.error("TinyPayment 컨트랙트 approve 실패: {}", e.getMessage(), e);
+        }
     }
 
     @Override
@@ -102,22 +125,21 @@ public class BlockchainServiceImpl implements BlockchainService {
                     "결제 비밀번호 검증 실패: userId=" + userId);
         }
 
-        // 3. TODO: 본인인증 검증 (백엔드가 phone_verified 필드 추가 후 활성화)
-        //    회의 합의 사항: 본인인증 책임은 백엔드 영역
-        //    활성화 방법:
-        //      1. UserRepository 의존성 추가
-        //      2. user.isPhoneVerified() 확인
-        //      3. false면 AbuseLog(UNAUTHORIZED_PAYMENT_ATTEMPT) + PaymentAuthException
-        // if (!authCtx.isPhoneVerified()) {
-        //     AbuseLog abuseLog = AbuseLog.builder()
-        //             .user(...)
-        //             .abuseType(AbuseType.UNAUTHORIZED_PAYMENT_ATTEMPT.name())
-        //             .actionTaken(AbuseActionType.BLOCKED)
-        //             .detail("본인인증 미완료 충전 시도: userId=" + userId)
-        //             .build();
-        //     abuseLogRepository.save(abuseLog);
-        //     throw new PaymentAuthException("본인인증 미완료: userId=" + userId);
-        // }
+        // 3. 본인인증 검증 (DB의 phoneVerified 직접 조회 — 이중 방어)
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new PaymentAuthException(
+                        "사용자 없음: userId=" + userId));
+
+        if (!user.isPhoneVerified()) {
+            AbuseLog abuseLog = AbuseLog.builder()
+                    .user(user)
+                    .abuseType(AbuseType.UNAUTHORIZED_PAYMENT_ATTEMPT.name())
+                    .actionTaken(AbuseActionType.BLOCKED)
+                    .detail("본인인증 미완료 충전 시도: userId=" + userId)
+                    .build();
+            abuseLogRepository.save(abuseLog);
+            throw new PaymentAuthException("본인인증 미완료: userId=" + userId);
+        }
 
         // 4. Wallet 조회
         Wallet wallet = walletRepository.findByUser_Id(userId)
