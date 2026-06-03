@@ -28,6 +28,7 @@ public enum ErrorType {
     MONTHLY_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "월 결제 한도를 초과했습니다."),
     INSUFFICIENT_BALANCE(HttpStatus.BAD_REQUEST, "지갑 잔액이 부족합니다."),
     WALLET_LOCKED(HttpStatus.BAD_REQUEST, "지갑이 잠겨있습니다."),
+    PROMPT_INJECTION_DETECTED(HttpStatus.BAD_REQUEST, "허용되지 않은 요청 패턴이 감지되었습니다."),
 
     /**
      * HTTP 401 (UNAUTHORIZED)
