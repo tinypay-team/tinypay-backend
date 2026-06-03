@@ -1,4 +1,4 @@
-package com.tinypay.global.common.auth;
+package com.tinypay.blockchain.dto;
 
 import lombok.Builder;
 import lombok.Getter;

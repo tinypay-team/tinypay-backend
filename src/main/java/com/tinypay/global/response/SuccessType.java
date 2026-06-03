@@ -40,6 +40,7 @@ public enum SuccessType {
     CREATE_CHAT_SESSION_SUCCESS(HttpStatus.CREATED, "새 채팅 세션이 생성되었습니다."),
     CHAT_MESSAGE_CREATE_SUCCESS(HttpStatus.CREATED, "메시지가 생성되었습니다."),
     PAYMENT_SUCCESS(HttpStatus.CREATED, "결제에 성공했습니다."),
+    TOP_UP_SUCCESS(HttpStatus.CREATED, "지갑 충전에 성공했습니다."),
     CREATE_WALLET_SUCCESS(HttpStatus.CREATED, "지갑 생성에 성공했습니다."),
     ;
 

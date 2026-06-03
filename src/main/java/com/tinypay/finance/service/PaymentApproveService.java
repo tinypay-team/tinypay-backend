@@ -13,7 +13,6 @@ import com.tinypay.finance.dto.request.PaymentApproveRequest;
 import com.tinypay.finance.dto.response.PaymentApproveResponse;
 import com.tinypay.dify.repository.AiRequestRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -25,11 +24,8 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.UUID;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentApproveService {
@@ -86,13 +82,13 @@ public class PaymentApproveService {
         // 7. 예산 정책 조회
         BudgetPolicy policy = budgetPolicyRepository.findByUser_IdAndDeletedAtIsNull(userId).orElse(null);
         boolean autoPaymentEnabled = policy != null && policy.isAutoPaymentEnabled();
-        boolean limitExceeded = policy != null
+        boolean perPaymentLimitExceeded = policy != null
                 && policy.getPerRequestLimit() != null
                 && estimatedCost.compareTo(policy.getPerRequestLimit()) > 0;
 
         // 8. 자동결제 활성화 + 한도 미초과 시 비밀번호 불필요
         //    그 외(비밀번호 비활성화 or 한도 초과)는 비밀번호 필요
-        if (!autoPaymentEnabled || limitExceeded) {
+        if (!autoPaymentEnabled || perPaymentLimitExceeded) {
             if (!StringUtils.hasText(request.getWalletPassword())) {
                 throw new CustomException(ErrorType.MISSING_WALLET_PASSWORD);
             }
@@ -127,7 +123,6 @@ public class PaymentApproveService {
                     "AI_SERVICE"
             );
         } catch (Exception e) {
-            log.error(e.getMessage());
             paymentLogService.saveFailedPaymentLog(
                     aiRequest.getUser(), aiRequest, wallet, orderId, receiverWalletAddress, estimatedCost);
             throw new CustomException(ErrorType.INTERNAL_SERVER_ERROR);
