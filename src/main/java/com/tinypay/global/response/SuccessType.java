@@ -32,6 +32,7 @@ public enum SuccessType {
     SEND_VERIFICATION_CODE_SUCCESS(HttpStatus.OK, "인증번호가 발송되었습니다."),
     VERIFY_PHONE_NUMBER_SUCCESS(HttpStatus.OK, "전화번호 인증이 완료되었습니다."),
     GET_AUTO_PAYMENT_CHECK_SUCCESS(HttpStatus.OK, "자동결제 여부 조회에 성공했습니다."),
+    UPDATE_AUTO_PAYMENT_SUCCESS(HttpStatus.OK, "자동결제 설정 변경에 성공했습니다."),
 
     /**
      * HTTP 201 Created

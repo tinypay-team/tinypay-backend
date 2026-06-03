@@ -1,7 +1,10 @@
 package com.tinypay.finance.controller;
 
 import com.tinypay.finance.dto.request.CreateWalletRequest;
+import com.tinypay.finance.dto.request.UpdateAutoPaymentRequest;
 import com.tinypay.finance.dto.response.GetWalletResponse;
+import com.tinypay.finance.dto.response.UpdateAutoPaymentResponse;
+import com.tinypay.finance.service.BudgetPolicyService;
 import com.tinypay.finance.service.WalletService;
 import com.tinypay.global.response.ApiResponse;
 import com.tinypay.global.response.SuccessType;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class WalletController {
 
     private final WalletService walletService;
+    private final BudgetPolicyService budgetPolicyService;
 
     @PostMapping
     public ApiResponse<?> createWallet(
@@ -28,5 +32,14 @@ public class WalletController {
     @GetMapping
     public ApiResponse<GetWalletResponse> getWallet(@RequestAttribute("userId") Long userId) {
         return ApiResponse.success(SuccessType.GET_WALLET_SUCCESS, walletService.getWallet(userId));
+    }
+
+    @PatchMapping("/{walletId}/auto-payment")
+    public ApiResponse<UpdateAutoPaymentResponse> updateAutoPayment(
+            @RequestAttribute("userId") Long userId,
+            @PathVariable Long walletId,
+            @RequestBody @Valid UpdateAutoPaymentRequest request) {
+        return ApiResponse.success(SuccessType.UPDATE_AUTO_PAYMENT_SUCCESS,
+                budgetPolicyService.updateAutoPayment(userId, walletId, request));
     }
 }

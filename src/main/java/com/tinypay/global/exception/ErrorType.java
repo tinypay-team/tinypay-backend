@@ -29,6 +29,7 @@ public enum ErrorType {
     PER_REQUEST_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "건당 결제 한도를 초과했습니다."),
     MONTHLY_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "월 결제 한도를 초과했습니다."),
     INSUFFICIENT_BALANCE(HttpStatus.BAD_REQUEST, "지갑 잔액이 부족합니다."),
+    AUTO_PAYMENT_PASSWORD_REQUIRED(HttpStatus.BAD_REQUEST, "자동결제 활성화 시 지갑 비밀번호를 입력해야 합니다."),
     WALLET_LOCKED(HttpStatus.LOCKED, "지갑이 잠겨 있습니다."),
     WALLET_LOCKED_BY_PASSWORD_FAILURE(HttpStatus.LOCKED, "지갑 비밀번호 입력 횟수를 초과하여 지갑이 잠겼습니다."),
     PROMPT_INJECTION_DETECTED(HttpStatus.BAD_REQUEST, "허용되지 않은 요청 패턴이 감지되었습니다."),
@@ -44,6 +45,7 @@ public enum ErrorType {
      * HTTP 403 (FORBIDDEN)
      */
     REQUEST_FORBIDDEN(HttpStatus.FORBIDDEN, "해당 요청에 대한 접근 권한이 없습니다."),
+    WALLET_FORBIDDEN(HttpStatus.FORBIDDEN, "해당 지갑에 대한 접근 권한이 없습니다."),
     PHONE_NOT_VERIFIED(HttpStatus.FORBIDDEN, "전화번호 인증이 완료되지 않은 사용자입니다."),
     PAYMENT_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "해당 결제 내역에 접근할 수 없습니다."),
     
