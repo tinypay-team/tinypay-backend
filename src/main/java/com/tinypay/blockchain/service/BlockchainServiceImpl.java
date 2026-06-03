@@ -191,6 +191,16 @@ public class BlockchainServiceImpl implements BlockchainService {
             return true;
         }
 
+        // 검증 실패 → 어뷰징 기록 (영수증은 txHash가 핵심 식별자, userId 없음)
+        AbuseLog receiptAbuseLog = AbuseLog.builder()
+                .abuseType(AbuseType.RECEIPT_VERIFICATION_FAILED.name())
+                .actionTaken(AbuseActionType.BLOCKED)
+                .detail("영수증 검증 실패: txHash=" + txHash
+                        + ", reason=" + result.getReason()
+                        + ", detail=" + result.getDetail())
+                .build();
+        abuseLogRepository.save(receiptAbuseLog);
+
         // 실패 사유별로 명세서 7번에 정의된 예외 throw
         String detail = result.getDetail();
         switch (result.getReason()) {
