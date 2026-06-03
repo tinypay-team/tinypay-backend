@@ -1,6 +1,6 @@
 package com.tinypay.blockchain.service;
 
-import com.tinypay.global.common.auth.PaymentAuthContext;
+import com.tinypay.blockchain.dto.PaymentAuthContext;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;

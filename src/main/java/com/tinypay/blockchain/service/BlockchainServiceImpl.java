@@ -19,9 +19,10 @@ import com.tinypay.blockchain.verification.VerificationResult;
 import com.tinypay.finance.domain.Wallet;
 import com.tinypay.finance.domain.WalletStatus;
 import com.tinypay.finance.repository.WalletRepository;
-import com.tinypay.global.common.auth.PaymentAuthContext;
+import com.tinypay.blockchain.dto.PaymentAuthContext;
 import com.tinypay.user.domain.User;
 import com.tinypay.user.repository.UserRepository;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -82,6 +83,17 @@ public class BlockchainServiceImpl implements BlockchainService {
                 mockUsdcAddress, web3j, txManager, gasProvider);
         this.tinyPayment = TinyPayment.load(
                 tinyPaymentAddress, web3j, txManager, gasProvider);
+    }
+
+    @PostConstruct
+    public void approveSpender() {
+        try {
+            BigInteger maxAllowance = BigInteger.TWO.pow(256).subtract(BigInteger.ONE);
+            mockUSDC.approve(tinyPaymentAddress, maxAllowance).send();
+            log.info("TinyPayment 컨트랙트 approve 완료: spender={}", tinyPaymentAddress);
+        } catch (Exception e) {
+            log.error("TinyPayment 컨트랙트 approve 실패: {}", e.getMessage(), e);
+        }
     }
 
     @Override
