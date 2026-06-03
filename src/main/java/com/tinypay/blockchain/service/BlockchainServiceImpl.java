@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
@@ -213,7 +214,7 @@ public class BlockchainServiceImpl implements BlockchainService {
      * 백엔드가 Redis 카운트 관리 → 5회 도달 시 이 메서드 호출
      */
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void lockWalletForBruteForce(Long userId) {
         // 1. userId로 지갑 조회
         Wallet wallet = walletRepository.findByUser_Id(userId)
