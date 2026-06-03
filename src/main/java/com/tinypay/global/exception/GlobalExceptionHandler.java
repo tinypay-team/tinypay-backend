@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -41,6 +42,20 @@ public class GlobalExceptionHandler {
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(REQUEST_VALIDATION_EXCEPTION, validateDetails));
+    }
+
+    private static final Map<String, String> MISSING_PARAM_MESSAGES = Map.of(
+            "estimatedCost", "예상 금액이 존재하지 않습니다."
+    );
+
+    /**
+     * 400 MISSING_PARAM -> @RequestParam 누락 시 발생하는 예외 처리
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    protected ResponseEntity<ApiResponse<?>> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
+        String message = MISSING_PARAM_MESSAGES.getOrDefault(e.getParameterName(), "필수 파라미터가 존재하지 않습니다.");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(REQUEST_VALIDATION_EXCEPTION, message));
     }
 
     /**

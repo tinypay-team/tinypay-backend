@@ -25,7 +25,7 @@ public class WalletService {
     private final BudgetPolicyRepository budgetPolicyRepository;
     private final UserRepository userRepository;
     private final BlockchainService blockchainService;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final BCryptPasswordEncoder passwordEncoder;
 
     @Transactional
     public void createWallet(Long userId, CreateWalletRequest request) {
@@ -36,7 +36,7 @@ public class WalletService {
             throw new CustomException(ErrorType.PHONE_NOT_VERIFIED);
         }
 
-        String hashedPin = passwordEncoder.encode(request.getWalletPin());
+        String hashedPassword = passwordEncoder.encode(request.getWalletPassword());
 
         CreateWalletResult result = blockchainService.createWallet();
 
@@ -46,7 +46,7 @@ public class WalletService {
                 .privateKeyEncrypted(result.getEncryptedPrivateKey())
                 .build();
 
-        wallet.initializePin(hashedPin);
+        wallet.initializePassword(hashedPassword);
         walletRepository.save(wallet);
     }
 
