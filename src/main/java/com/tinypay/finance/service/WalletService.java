@@ -5,6 +5,7 @@ import com.tinypay.blockchain.service.CreateWalletResult;
 import com.tinypay.finance.domain.BudgetPolicy;
 import com.tinypay.finance.domain.Wallet;
 import com.tinypay.finance.dto.request.CreateWalletRequest;
+import com.tinypay.finance.dto.response.CreateWalletResponse;
 import com.tinypay.finance.dto.response.GetWalletResponse;
 import com.tinypay.finance.repository.BudgetPolicyRepository;
 import com.tinypay.finance.repository.WalletRepository;
@@ -28,7 +29,7 @@ public class WalletService {
     private final BCryptPasswordEncoder passwordEncoder;
 
     @Transactional
-    public void createWallet(Long userId, CreateWalletRequest request) {
+    public CreateWalletResponse createWallet(Long userId, CreateWalletRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorType.USER_NOT_FOUND));
 
@@ -47,7 +48,11 @@ public class WalletService {
                 .build();
 
         wallet.initializePassword(hashedPassword);
-        walletRepository.save(wallet);
+        Wallet saved = walletRepository.save(wallet);
+
+        return CreateWalletResponse.builder()
+                .walletId(saved.getId())
+                .build();
     }
 
     @Transactional(readOnly = true)

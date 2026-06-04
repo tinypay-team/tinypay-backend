@@ -2,6 +2,7 @@ package com.tinypay.finance.controller;
 
 import com.tinypay.finance.dto.request.CreateWalletRequest;
 import com.tinypay.finance.dto.request.TopUpRequest;
+import com.tinypay.finance.dto.response.CreateWalletResponse;
 import com.tinypay.finance.dto.request.UpdateAutoPaymentRequest;
 import com.tinypay.finance.dto.response.GetWalletResponse;
 import com.tinypay.finance.dto.response.TopUpResponse;
@@ -26,11 +27,11 @@ public class WalletController {
     private final WalletTopUpService walletTopUpService;
 
     @PostMapping
-    public ApiResponse<?> createWallet(
+    public ApiResponse<CreateWalletResponse> createWallet(
             @RequestAttribute("userId") Long userId,
             @Valid @RequestBody CreateWalletRequest request) {
-        walletService.createWallet(userId, request);
-        return ApiResponse.success(SuccessType.CREATE_WALLET_SUCCESS);
+        return ApiResponse.success(SuccessType.CREATE_WALLET_SUCCESS,
+                walletService.createWallet(userId, request));
     }
 
     @GetMapping
