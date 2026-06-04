@@ -23,14 +23,6 @@ spring:
       max-file-size: 3MB
       max-request-size: 5MB
 
-jwt:
-  secret: ${JWT_SECRET}
-  expiration: 2419200000
-  refresh-expiration: 2419200000
-
-google:
-  client-id: ${GOOGLE_CLIENT_ID}
-
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -42,10 +34,28 @@ google:
           max-idle: 8
           min-idle: 0
 
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 2419200000
+  refresh-expiration: 2419200000
+
+google:
+  client-id: ${GOOGLE_CLIENT_ID}
+
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    region:
+      static: ap-northeast-2
+    s3:
+      bucket: ${S3_BUCKET_NAME}
+
 coolsms:
-  api-key: NCSGULAWY71JRQXB
-  api-secret: YF7KIZFCQYY22W4BFQT9SOLCJHIP3FQB
-  from-number: "01056021260"
+  api-key: ${COOLSMS_API_KEY}
+  api-secret: ${COOLSMS_API_SECRET}
+  from-number: ${COOLSMS_FROM_NUMBER}
 
 dify:
   base-url: ${DIFY_BASE_URL}

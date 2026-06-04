@@ -58,6 +58,7 @@ public enum ErrorType {
     WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "지갑을 찾을 수 없습니다."),
     VERIFICATION_CODE_NOT_FOUND(HttpStatus.NOT_FOUND, "인증번호가 유효하지 않습니다. 인증번호를 다시 요청해주세요."),
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "결제 내역을 찾을 수 없습니다."),
+    FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."),
 
     /**
      * HTTP 409 (CONFLICT)

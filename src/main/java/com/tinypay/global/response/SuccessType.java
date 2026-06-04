@@ -33,6 +33,8 @@ public enum SuccessType {
     VERIFY_PHONE_NUMBER_SUCCESS(HttpStatus.OK, "전화번호 인증이 완료되었습니다."),
     GET_AUTO_PAYMENT_CHECK_SUCCESS(HttpStatus.OK, "자동결제 여부 조회에 성공했습니다."),
     UPDATE_AUTO_PAYMENT_SUCCESS(HttpStatus.OK, "자동결제 설정 변경에 성공했습니다."),
+    GET_UPLOAD_PRESIGNED_URL_SUCCESS(HttpStatus.OK, "업로드 URL 발급에 성공했습니다."),
+    GET_DOWNLOAD_PRESIGNED_URL_SUCCESS(HttpStatus.OK, "다운로드 URL 발급에 성공했습니다."),
 
     /**
      * HTTP 201 Created
@@ -42,6 +44,7 @@ public enum SuccessType {
     PAYMENT_SUCCESS(HttpStatus.CREATED, "결제에 성공했습니다."),
     TOP_UP_SUCCESS(HttpStatus.CREATED, "지갑 충전에 성공했습니다."),
     CREATE_WALLET_SUCCESS(HttpStatus.CREATED, "지갑 생성에 성공했습니다."),
+    CONFIRM_UPLOAD_SUCCESS(HttpStatus.CREATED, "파일 정보 저장에 성공했습니다.")
     ;
 
     private final HttpStatus httpStatus;
