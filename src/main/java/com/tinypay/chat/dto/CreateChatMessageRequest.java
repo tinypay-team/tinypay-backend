@@ -1,9 +1,7 @@
 package com.tinypay.chat.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-
 public record CreateChatMessageRequest(
-    String content
+    String content,
+    Long fileId   // 파일 첨부 시에만 포함 (선택)
 ) {
 }
