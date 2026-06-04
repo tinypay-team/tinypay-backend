@@ -34,14 +34,6 @@ spring:
           max-idle: 8
           min-idle: 0
 
-  cloud:
-    aws:
-      region:
-        static: ap-northeast-2
-      credentials:
-        access-key: ${AWS_ACCESS_KEY}
-        secret-key: ${AWS_SECRET_KEY}
-
 jwt:
   secret: ${JWT_SECRET}
   expiration: 2419200000
@@ -59,6 +51,11 @@ cloud:
       static: ap-northeast-2
     s3:
       bucket: ${S3_BUCKET_NAME}
+
+coolsms:
+  api-key: ${COOLSMS_API_KEY}
+  api-secret: ${COOLSMS_API_SECRET}
+  from-number: ${COOLSMS_FROM_NUMBER}
 
 dify:
   base-url: ${DIFY_BASE_URL}
