@@ -1,12 +1,18 @@
 package com.tinypay.dify.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tinypay.abuse.domain.AbuseActionType;
+import com.tinypay.abuse.domain.AbuseType;
+import com.tinypay.abuse.service.AbuseService;
 import com.tinypay.dify.config.DifyProperties;
 import com.tinypay.dify.dto.ChatAnalysisRequest;
 import com.tinypay.dify.dto.ChatAnalysisResponse;
 import com.tinypay.dify.dto.DifyWorkflowResponse;
 import com.tinypay.global.exception.CustomException;
 import com.tinypay.global.exception.ErrorType;
+import com.tinypay.security.validation.DifyResponseValidator;
+import com.tinypay.security.validation.ValidationResult;
+import com.tinypay.security.validation.ValidationSeverity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -23,6 +29,8 @@ public class DifyClient {
 
     private final DifyProperties difyProperties;
     private final RestClient restClient;
+    private final DifyResponseValidator difyResponseValidator;
+    private final AbuseService abuseService;
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     public ChatAnalysisResponse runChatAnalysis(ChatAnalysisRequest request) {
@@ -53,7 +61,31 @@ public class DifyClient {
             }
 
             log.info("[DifyClient] 분석 완료: responseType={}", outputs.responseType());
-            return new ChatAnalysisResponse(200, "success", outputs);
+
+            // ===== 보안: Dify 응답 검증 =====
+            ChatAnalysisResponse analysisResponse = new ChatAnalysisResponse(200, "success", outputs);
+            ValidationResult validation = difyResponseValidator.validate(analysisResponse);
+
+            if (!validation.isSafe()) {
+                log.warn("[DifyClient] 응답 검증 실패: severity={}, rules={}, reason={}",
+                        validation.getSeverity(),
+                        validation.getMatchedRules(),
+                        validation.getReason());
+
+                // HIGH/CRITICAL은 어뷰징 기록 + 차단
+                if (validation.getSeverity() == ValidationSeverity.HIGH
+                        || validation.getSeverity() == ValidationSeverity.CRITICAL) {
+                    abuseService.record(
+                            parseUserId(request.user()),
+                            AbuseType.DIFY_RESPONSE_MANIPULATION,
+                            AbuseActionType.BLOCKED,
+                            "Dify 응답 검증 실패: severity=" + validation.getSeverity()
+                                    + ", rules=" + validation.getReason());
+                    throw new CustomException(ErrorType.DIFY_RESPONSE_INVALID);
+                }
+            }
+
+            return analysisResponse;
 
         } catch (CustomException e) {
             throw e;
@@ -63,6 +95,17 @@ public class DifyClient {
         } catch (Exception e) {
             log.error("[DifyClient] 예기치 않은 오류: {}", e.getMessage());
             throw new CustomException(ErrorType.DIFY_API_ERROR);
+        }
+    }
+
+    /**
+     * request.user()(String)를 Long userId로 변환. 실패 시 null (기록은 유지).
+     */
+    private Long parseUserId(String user) {
+        try {
+            return Long.parseLong(user);
+        } catch (Exception e) {
+            return null;
         }
     }
 }
