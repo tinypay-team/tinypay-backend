@@ -89,6 +89,12 @@ public class BlockchainServiceImpl implements BlockchainService {
     public void approveSpender() {
         try {
             BigInteger maxAllowance = BigInteger.TWO.pow(256).subtract(BigInteger.ONE);
+            BigInteger currentAllowance = mockUSDC.allowance(
+                    credentials.getAddress(), tinyPaymentAddress).send();
+            if (currentAllowance.compareTo(BigInteger.TWO.pow(255)) >= 0) {
+                log.info("TinyPayment 컨트랙트 approve 이미 설정됨, 스킵: spender={}", tinyPaymentAddress);
+                return;
+            }
             mockUSDC.approve(tinyPaymentAddress, maxAllowance).send();
             log.info("TinyPayment 컨트랙트 approve 완료: spender={}", tinyPaymentAddress);
         } catch (Exception e) {
