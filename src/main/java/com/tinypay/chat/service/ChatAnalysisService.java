@@ -1,9 +1,19 @@
 package com.tinypay.chat.service;
 
+import com.tinypay.abuse.domain.AbuseActionType;
+import com.tinypay.abuse.domain.AbuseLog;
+import com.tinypay.abuse.domain.AbuseLogRepository;
+import com.tinypay.abuse.domain.AbuseType;
 import com.tinypay.chat.domain.ChatMessage;
 import com.tinypay.dify.client.DifyClient;
 import com.tinypay.dify.dto.ChatAnalysisRequest;
 import com.tinypay.dify.dto.ChatAnalysisResponse;
+import com.tinypay.global.exception.CustomException;
+import com.tinypay.global.exception.ErrorType;
+import com.tinypay.security.injection.DetectionResult;
+import com.tinypay.security.injection.PromptInjectionDetector;
+import com.tinypay.user.domain.User;
+import com.tinypay.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +30,9 @@ import java.util.stream.Collectors;
 public class ChatAnalysisService {
 
     private final DifyClient difyClient;
+    private final PromptInjectionDetector promptInjectionDetector;
+    private final UserRepository userRepository;
+    private final AbuseLogRepository abuseLogRepository;
 
     // 이전 채팅 리스트를 받아서 context를 만든 뒤, analyzeWithContext()를 호출하는 메서드
     public ChatAnalysisResponse analyze(Long userId, Long sessionId, String currentMessage, List<ChatMessage> recentMessages) {
@@ -30,6 +43,25 @@ public class ChatAnalysisService {
     // 이미 만들어진 context 문자열을 가지고 Dify에게 분석 요청을 보내는 메서드
     public ChatAnalysisResponse analyzeWithContext(Long userId, Long sessionId, String currentMessage, String context) {
         log.debug("[ChatAnalysisService] 요청: userId={}, sessionId={}", userId, sessionId);
+
+        // ===== 보안: 프롬프트 인젝션 검사 (Dify 호출 전) =====
+        DetectionResult detection = promptInjectionDetector.detect(currentMessage);
+        if (detection.isDetected()) {
+            log.warn("[ChatAnalysisService] 프롬프트 인젝션 감지: userId={}, severity={}, reason={}",
+                    userId, detection.getSeverity(), detection.getReason());
+
+            User user = userRepository.findById(userId).orElse(null);
+            AbuseLog abuseLog = AbuseLog.builder()
+                    .user(user)
+                    .abuseType(AbuseType.PROMPT_INJECTION.name())
+                    .actionTaken(AbuseActionType.BLOCKED)
+                    .detail("프롬프트 인젝션 감지: severity=" + detection.getSeverity()
+                            + ", rules=" + detection.getReason())
+                    .build();
+            abuseLogRepository.save(abuseLog);
+
+            throw new CustomException(ErrorType.PROMPT_INJECTION_DETECTED);
+        }
 
         ChatAnalysisRequest request = ChatAnalysisRequest.of(userId, sessionId, currentMessage, context);
 
