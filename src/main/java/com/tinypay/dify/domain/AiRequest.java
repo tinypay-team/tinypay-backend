@@ -41,7 +41,7 @@ public class AiRequest extends BaseTimeEntity {
     @Column(name = "service_name")
     private String serviceName;
 
-    @Lob
+    @Column(name = "prompt", columnDefinition = "LONGTEXT")
     private String prompt;
 
     @Enumerated(EnumType.STRING)
@@ -54,8 +54,7 @@ public class AiRequest extends BaseTimeEntity {
     @Column(name = "estimated_total_cost", precision = 18, scale = 6)
     private BigDecimal estimatedTotalCost;
 
-    @Lob
-    @Column(name = "analysis_summary")
+    @Column(name = "analysis_summary", columnDefinition = "LONGTEXT")
     private String analysisSummary;
 
     @Column(name = "approved_at")
@@ -66,6 +65,12 @@ public class AiRequest extends BaseTimeEntity {
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
+
+    @Column(name = "executed_services", columnDefinition = "LONGTEXT")
+    private String executedServices;
+
+    @Column(name = "generated_files", columnDefinition = "LONGTEXT")
+    private String generatedFiles;
 
     @Builder
     public AiRequest(User user, ChatMessage message, ChatSession session, String aiServerRequestId, String serviceName, String prompt, AiRequestStatus status, String statusMessage, BigDecimal estimatedTotalCost, String analysisSummary
@@ -109,6 +114,13 @@ public class AiRequest extends BaseTimeEntity {
     public void complete() {
         this.status = AiRequestStatus.COMPLETED;
         this.completedAt = LocalDateTime.now();
+    }
+
+    public void completeWithResult(String executedServices, String generatedFiles) {
+        this.status = AiRequestStatus.COMPLETED;
+        this.completedAt = LocalDateTime.now();
+        this.executedServices = executedServices;
+        this.generatedFiles = generatedFiles;
     }
 
     public void fail(String statusMessage) {
