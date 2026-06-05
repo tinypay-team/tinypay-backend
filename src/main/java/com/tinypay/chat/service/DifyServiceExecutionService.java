@@ -128,7 +128,8 @@ public class DifyServiceExecutionService {
             String executedServicesJson = toJson(
                     response.data() != null ? response.data().executedServices() : null);
             String generatedFilesJson = toJson(s3Files);
-            aiRequest.completeWithResult(executedServicesJson, generatedFilesJson);
+            String resultTitle = response.data() != null ? response.data().resultTitle() : null;
+            aiRequest.completeWithResult(resultTitle, executedServicesJson, generatedFilesJson);
 
             log.info("[DifyServiceExecution] 서비스 실행 완료: aiRequestId={}", aiRequestId);
 

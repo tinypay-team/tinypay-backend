@@ -116,9 +116,10 @@ public class AiRequest extends BaseTimeEntity {
         this.completedAt = LocalDateTime.now();
     }
 
-    public void completeWithResult(String executedServices, String generatedFiles) {
+    public void completeWithResult(String serviceName, String executedServices, String generatedFiles) {
         this.status = AiRequestStatus.COMPLETED;
         this.completedAt = LocalDateTime.now();
+        this.serviceName = serviceName;
         this.executedServices = executedServices;
         this.generatedFiles = generatedFiles;
     }
