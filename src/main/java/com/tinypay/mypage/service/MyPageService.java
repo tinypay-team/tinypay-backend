@@ -28,8 +28,7 @@ public class MyPageService {
 
     @Transactional(readOnly = true)
     public MyPageResponse getMyPage(Long userId) {
-        Wallet wallet = walletRepository.findByUser_Id(userId)
-                .orElseThrow(() -> new CustomException(ErrorType.WALLET_NOT_FOUND));
+        Wallet wallet = walletRepository.findByUser_Id(userId).orElse(null);
 
         BudgetPolicy policy = budgetPolicyRepository.findByUser_IdAndDeletedAtIsNull(userId)
                 .orElse(null);
@@ -45,7 +44,7 @@ public class MyPageService {
         BigDecimal averageAmount = paymentLogRepository.averageSuccessfulAmountThisMonth(userId, PaymentStatus.SUCCESS);
 
         return MyPageResponse.builder()
-                .balance(wallet.getBalance())
+                .balance(wallet != null ? wallet.getBalance() : null)
                 .monthlyBudget(MyPageResponse.MonthlyBudget.builder()
                         .usedAmount(usedAmount)
                         .limitAmount(limitAmount)

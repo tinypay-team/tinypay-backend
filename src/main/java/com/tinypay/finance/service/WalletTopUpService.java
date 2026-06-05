@@ -15,6 +15,7 @@ import com.tinypay.global.exception.ErrorType;
 import com.tinypay.user.domain.User;
 import com.tinypay.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WalletTopUpService {
@@ -78,6 +80,8 @@ public class WalletTopUpService {
         try {
             txHash = blockchainService.mintUsdc(wallet.getWalletAddress(), rawAmount, authCtx);
         } catch (Exception e) {
+            log.error("[WalletTopUpService] mintUsdc 실패: walletAddress={}, amount={}, error={}",
+                    wallet.getWalletAddress(), amount, e.getMessage(), e);
             chargeHistoryService.saveFailedChargeHistory(user, wallet, amount);
             throw new CustomException(ErrorType.INTERNAL_SERVER_ERROR);
         }

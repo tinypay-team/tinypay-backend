@@ -4,6 +4,7 @@ import com.tinypay.chat.domain.MessageType;
 import com.tinypay.chat.domain.SenderRole;
 import com.tinypay.request.dto.ApiItemResponse;
 import com.tinypay.request.dto.AiRequestResponseStatus;
+import com.tinypay.request.dto.GeneratedFileDto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -18,9 +19,10 @@ public record GetChatMessageResponse(
         AiRequestResponseStatus requestStatus,
         List<ApiItemResponse> apiItems,
         BigDecimal totalEstimatedCost,
-        Long fileId,        // 첨부파일 있을 때만 포함 (없으면 null)
-        String fileName,    // 첨부파일 이름 (없으면 null)
-        String fileType,    // 첨부파일 MIME 타입 (없으면 null)
+        List<GeneratedFileDto> generatedFiles,  // AI가 생성한 파일 (PDF, 이미지 등)
+        Long fileId,        // 사용자가 첨부한 파일 (없으면 null)
+        String fileName,
+        String fileType,
         LocalDateTime createdAt
 ) {
 }

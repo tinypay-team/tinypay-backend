@@ -57,9 +57,11 @@ coolsms:
   api-secret: ${COOLSMS_API_SECRET}
   from-number: ${COOLSMS_FROM_NUMBER}
 
+
 dify:
   base-url: ${DIFY_BASE_URL}
   chat-analysis-api-key: ${DIFY_CHAT_ANALYSIS_API_KEY}
+  service-execution-api-key: ${DIFY_SERVICE_EXECUTION_API_KEY}
 
 blockchain:
   rpc-url: ${BLOCKCHAIN_RPC_URL}

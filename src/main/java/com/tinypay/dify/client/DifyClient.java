@@ -1,5 +1,6 @@
 package com.tinypay.dify.client;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tinypay.abuse.domain.AbuseActionType;
 import com.tinypay.abuse.domain.AbuseType;
@@ -8,6 +9,8 @@ import com.tinypay.dify.config.DifyProperties;
 import com.tinypay.dify.dto.ChatAnalysisRequest;
 import com.tinypay.dify.dto.ChatAnalysisResponse;
 import com.tinypay.dify.dto.DifyWorkflowResponse;
+import com.tinypay.dify.dto.ServiceExecutionRequest;
+import com.tinypay.dify.dto.ServiceExecutionResponse;
 import com.tinypay.global.exception.CustomException;
 import com.tinypay.global.exception.ErrorType;
 import com.tinypay.security.validation.DifyResponseValidator;
@@ -94,6 +97,51 @@ public class DifyClient {
             throw new CustomException(ErrorType.DIFY_API_ERROR);
         } catch (Exception e) {
             log.error("[DifyClient] 예기치 않은 오류: {}", e.getMessage());
+            throw new CustomException(ErrorType.DIFY_API_ERROR);
+        }
+    }
+
+    public ServiceExecutionResponse runServiceExecution(ServiceExecutionRequest request) {
+        String url = difyProperties.baseUrl() + WORKFLOW_RUN_PATH;
+        log.debug("[DifyClient] 서비스 실행 요청 → {} | user={}", url, request.user());
+
+        try {
+            String rawBody = restClient.post()
+                    .uri(url)
+                    .header("Authorization", "Bearer " + difyProperties.serviceExecutionApiKey())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .body(String.class);
+
+            log.info("[DifyClient] 서비스 실행 응답 raw: {}", rawBody);
+
+            // Dify 표준 응답 구조: {workflow_run_id, task_id, data: {status, outputs: {...}}}
+            JsonNode root = objectMapper.readTree(rawBody);
+            JsonNode dataNode = root.path("data");
+
+            if (dataNode.isMissingNode() || !"succeeded".equals(dataNode.path("status").asText())) {
+                String error = dataNode.path("error").asText("unknown");
+                log.error("[DifyClient] 서비스 실행 워크플로우 실패: status={}, error={}",
+                        dataNode.path("status").asText(), error);
+                throw new CustomException(ErrorType.DIFY_API_ERROR);
+            }
+
+            // outputs 필드를 ServiceExecutionResponse.Data로 파싱
+            JsonNode outputsNode = dataNode.path("outputs");
+            ServiceExecutionResponse.Data outputs = objectMapper.treeToValue(
+                    outputsNode, ServiceExecutionResponse.Data.class);
+
+            ServiceExecutionResponse response = new ServiceExecutionResponse(200, "success", outputs);
+            return response;
+
+        } catch (CustomException e) {
+            throw e;
+        } catch (RestClientException e) {
+            log.error("[DifyClient] 서비스 실행 HTTP 호출 실패: {}", e.getMessage());
+            throw new CustomException(ErrorType.DIFY_API_ERROR);
+        } catch (Exception e) {
+            log.error("[DifyClient] 서비스 실행 예기치 않은 오류: {}", e.getMessage());
             throw new CustomException(ErrorType.DIFY_API_ERROR);
         }
     }

@@ -38,14 +38,17 @@ public class AiRequestApiItem extends BaseTimeEntity {
     @Column(name = "execution_order")
     private Integer executionOrder;
 
+    @Column(name = "output_type", length = 50)
+    private String outputType;
+
     @Builder
-    public AiRequestApiItem(AiRequest request, String apiName, String providerName, String description, BigDecimal estimatedCost, Integer executionOrder
-    ) {
+    public AiRequestApiItem(AiRequest request, String apiName, String providerName, String description, BigDecimal estimatedCost, Integer executionOrder, String outputType) {
         this.request = request;
         this.apiName = apiName;
         this.providerName = providerName;
         this.description = description;
         this.estimatedCost = estimatedCost;
         this.executionOrder = executionOrder;
+        this.outputType = outputType;
     }
 }

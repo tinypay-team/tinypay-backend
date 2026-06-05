@@ -188,6 +188,7 @@ public class DifyAsyncService {
                             .description(s.servicePurpose())
                             .estimatedCost(s.estimatedCost() != null ? s.estimatedCost() : BigDecimal.ZERO)
                             .executionOrder(i + 1)
+                            .outputType(s.outputType())
                             .build()
             );
         }
