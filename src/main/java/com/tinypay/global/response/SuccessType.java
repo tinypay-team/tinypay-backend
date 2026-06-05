@@ -16,13 +16,10 @@ public enum SuccessType {
     LOGIN_SUCCESS(HttpStatus.OK, "로그인에 성공했습니다."),
     LOGOUT_SUCCESS(HttpStatus.OK, "로그아웃에 성공했습니다."),
     TOKEN_REISSUE_SUCCESS(HttpStatus.OK, "토큰 재발급에 성공했습니다."),
-    CREATE_CHAT_SESSION_SUCCESS(HttpStatus.CREATED, "새 채팅 세션이 생성되었습니다."),
     GET_CHAT_SESSION_LIST_SUCCESS(HttpStatus.OK, "채팅 세션 목록 조회에 성공했습니다."),
-    CHAT_MESSAGE_CREATE_SUCCESS(HttpStatus.CREATED, "메시지가 생성되었습니다."),
     GET_MY_INFO_SUCCESS(HttpStatus.OK, "내 정보 조회에 성공했습니다."),
     UPDATE_MY_INFO_SUCCESS(HttpStatus.OK, "내 정보 수정에 성공했습니다."),
     DELETE_USER_SUCCESS(HttpStatus.OK, "회원 탈퇴에 성공했습니다."),
-    PAYMENT_SUCCESS(HttpStatus.CREATED, "결제에 성공했습니다."),
     UPDATE_PER_PAYMENT_LIMIT_SUCCESS(HttpStatus.OK, "1회 결제 한도 설정에 성공했습니다."),
     UPDATE_MONTHLY_BUDGET_SUCCESS(HttpStatus.OK, "이번 달 예산 설정에 성공했습니다."),
     GET_MY_PAGE_SUCCESS(HttpStatus.OK, "마이페이지 조회에 성공했습니다."),
@@ -30,7 +27,24 @@ public enum SuccessType {
     GET_CHAT_MESSAGE_LIST_SUCCESS(HttpStatus.OK, "채팅 메시지 조회에 성공했습니다."),
     GET_AI_REQUEST_STATUS_SUCCESS(HttpStatus.OK, "AI 요청 상태를 조회했습니다."),
     CANCEL_AI_REQUEST_SUCCESS(HttpStatus.OK, "AI 요청이 취소되었습니다."),
-    GET_PAYMENT_DETAIL_SUCCESS(HttpStatus.OK, "결제 내역 세부 조회에 성공했습니다.")
+    GET_PAYMENT_DETAIL_SUCCESS(HttpStatus.OK, "결제 내역 세부 조회에 성공했습니다."),
+    GET_WALLET_SUCCESS(HttpStatus.OK, "내 지갑 정보 조회에 성공했습니다."),
+    SEND_VERIFICATION_CODE_SUCCESS(HttpStatus.OK, "인증번호가 발송되었습니다."),
+    VERIFY_PHONE_NUMBER_SUCCESS(HttpStatus.OK, "전화번호 인증이 완료되었습니다."),
+    GET_AUTO_PAYMENT_CHECK_SUCCESS(HttpStatus.OK, "자동결제 여부 조회에 성공했습니다."),
+    UPDATE_AUTO_PAYMENT_SUCCESS(HttpStatus.OK, "자동결제 설정 변경에 성공했습니다."),
+    GET_UPLOAD_PRESIGNED_URL_SUCCESS(HttpStatus.OK, "업로드 URL 발급에 성공했습니다."),
+    GET_DOWNLOAD_PRESIGNED_URL_SUCCESS(HttpStatus.OK, "다운로드 URL 발급에 성공했습니다."),
+
+    /**
+     * HTTP 201 Created
+     */
+    CREATE_CHAT_SESSION_SUCCESS(HttpStatus.CREATED, "새 채팅 세션이 생성되었습니다."),
+    CHAT_MESSAGE_CREATE_SUCCESS(HttpStatus.CREATED, "메시지가 생성되었습니다."),
+    PAYMENT_SUCCESS(HttpStatus.CREATED, "결제에 성공했습니다."),
+    TOP_UP_SUCCESS(HttpStatus.CREATED, "지갑 충전에 성공했습니다."),
+    CREATE_WALLET_SUCCESS(HttpStatus.CREATED, "지갑 생성에 성공했습니다."),
+    CONFIRM_UPLOAD_SUCCESS(HttpStatus.CREATED, "파일 정보 저장에 성공했습니다.")
     ;
 
     private final HttpStatus httpStatus;

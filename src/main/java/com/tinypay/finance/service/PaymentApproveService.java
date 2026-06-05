@@ -13,16 +13,17 @@ import com.tinypay.finance.dto.request.PaymentApproveRequest;
 import com.tinypay.finance.dto.response.PaymentApproveResponse;
 import com.tinypay.dify.repository.AiRequestRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.UUID;
 
 @Service
@@ -35,11 +36,16 @@ public class PaymentApproveService {
     private final PaymentLogRepository paymentLogRepository;
     private final PaymentLogService paymentLogService;
     private final BlockchainService blockchainService;
+    private final StringRedisTemplate stringRedisTemplate;
+
+    private final BCryptPasswordEncoder passwordEncoder;
 
     @Value("${blockchain.server-wallet.address}")
     private String receiverWalletAddress;
 
     private static final int USDC_DECIMALS = 6;
+    private static final int MAX_PASSWORD_FAILURES = 5;
+    private static final String PASSWORD_FAIL_KEY_PREFIX = "wallet:password:fail:";
 
     @Transactional
     public PaymentApproveResponse paymentApprove(Long userId, Long requestId, PaymentApproveRequest request) {
@@ -73,27 +79,37 @@ public class PaymentApproveService {
             throw new CustomException(ErrorType.WALLET_LOCKED);
         }
 
-        // 7. 잔액 확인
+        // 7. 예산 정책 조회
+        BudgetPolicy policy = budgetPolicyRepository.findByUser_IdAndDeletedAtIsNull(userId).orElse(null);
+        boolean autoPaymentEnabled = policy != null && policy.isAutoPaymentEnabled();
+        boolean perPaymentLimitExceeded = policy != null
+                && policy.getPerRequestLimit() != null
+                && estimatedCost.compareTo(policy.getPerRequestLimit()) > 0;
+
+        // 8. 자동결제 활성화 + 한도 미초과 시 비밀번호 불필요
+        //    그 외(비밀번호 비활성화 or 한도 초과)는 비밀번호 필요
+        if (!autoPaymentEnabled || perPaymentLimitExceeded) {
+            if (!StringUtils.hasText(request.getWalletPassword())) {
+                throw new CustomException(ErrorType.MISSING_WALLET_PASSWORD);
+            }
+            verifyWalletPassword(userId, request.getWalletPassword(), wallet);
+        }
+
+        // 9. 월 한도 확인
+        if (policy != null && policy.getMonthlyLimit() != null) {
+            BigDecimal monthlySpent = paymentLogRepository
+                    .sumSuccessfulAmountThisMonth(userId, PaymentStatus.SUCCESS);
+            if (monthlySpent.add(estimatedCost).compareTo(policy.getMonthlyLimit()) > 0) {
+                throw new CustomException(ErrorType.MONTHLY_LIMIT_EXCEEDED);
+            }
+        }
+
+        // 10. 잔액 확인
         if (wallet.getBalance().compareTo(estimatedCost) < 0) {
             throw new CustomException(ErrorType.INSUFFICIENT_BALANCE);
         }
 
-        // 8. 예산 정책 확인
-        budgetPolicyRepository.findByUser_IdAndDeletedAtIsNull(userId).ifPresent(policy -> {
-            if (policy.getPerRequestLimit() != null &&
-                    estimatedCost.compareTo(policy.getPerRequestLimit()) > 0) {
-                throw new CustomException(ErrorType.PER_REQUEST_LIMIT_EXCEEDED);
-            }
-            if (policy.getMonthlyLimit() != null) {
-                BigDecimal monthlySpent = paymentLogRepository
-                        .sumSuccessfulAmountThisMonth(userId, PaymentStatus.SUCCESS);
-                if (monthlySpent.add(estimatedCost).compareTo(policy.getMonthlyLimit()) > 0) {
-                    throw new CustomException(ErrorType.MONTHLY_LIMIT_EXCEEDED);
-                }
-            }
-        });
-
-        // 9. 블록체인 결제 실행
+        // 11. 블록체인 결제 실행
         String orderId = UUID.randomUUID().toString();
         BigInteger rawAmount = estimatedCost.movePointRight(USDC_DECIMALS).toBigInteger();
 
@@ -111,8 +127,7 @@ public class PaymentApproveService {
                     aiRequest.getUser(), aiRequest, wallet, orderId, receiverWalletAddress, estimatedCost);
             throw new CustomException(ErrorType.INTERNAL_SERVER_ERROR);
         }
-
-        // 10. 결제 기록 저장
+        // 12. 결제 기록 저장
         LocalDateTime executedAt = LocalDateTime.now();
         PaymentLog paymentLog = PaymentLog.builder()
                 .user(aiRequest.getUser())
@@ -129,10 +144,10 @@ public class PaymentApproveService {
                 .build();
         paymentLogRepository.save(paymentLog);
 
-        // 11. 지갑 잔액 차감
+        // 13. 지갑 잔액 차감
         wallet.updateBalance(wallet.getBalance().subtract(estimatedCost));
 
-        // 12. 요청 상태 업데이트
+        // 14. 요청 상태 업데이트
         aiRequest.approve();
         aiRequest.startExecution();
         aiRequest.complete();
@@ -151,5 +166,24 @@ public class PaymentApproveService {
                         .balance(wallet.getBalance())
                         .build())
                 .build();
+    }
+
+    private void verifyWalletPassword(Long userId, String inputPassword, Wallet wallet) {
+        String failKey = PASSWORD_FAIL_KEY_PREFIX + userId;
+
+        if (!passwordEncoder.matches(inputPassword, wallet.getWalletPassword())) {
+            Long failCount = stringRedisTemplate.opsForValue().increment(failKey);
+            stringRedisTemplate.expire(failKey, Duration.ofHours(24));
+
+            if (failCount != null && failCount >= MAX_PASSWORD_FAILURES) {
+                blockchainService.lockWalletForBruteForce(userId);
+                stringRedisTemplate.delete(failKey);
+                throw new CustomException(ErrorType.WALLET_LOCKED_BY_PASSWORD_FAILURE);
+            }
+
+            throw new CustomException(ErrorType.WRONG_WALLET_PASSWORD);
+        }
+
+        stringRedisTemplate.delete(failKey);
     }
 }
