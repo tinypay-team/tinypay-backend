@@ -1,6 +1,7 @@
 package com.tinypay.finance.service;
 
 import com.tinypay.blockchain.service.BlockchainService;
+import com.tinypay.chat.service.DifyServiceExecutionService;
 import com.tinypay.finance.domain.*;
 import com.tinypay.finance.repository.BudgetPolicyRepository;
 import com.tinypay.finance.repository.PaymentLogRepository;
@@ -13,11 +14,14 @@ import com.tinypay.finance.dto.request.PaymentApproveRequest;
 import com.tinypay.finance.dto.response.PaymentApproveResponse;
 import com.tinypay.dify.repository.AiRequestRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
@@ -26,6 +30,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentApproveService {
@@ -36,6 +41,7 @@ public class PaymentApproveService {
     private final PaymentLogRepository paymentLogRepository;
     private final PaymentLogService paymentLogService;
     private final BlockchainService blockchainService;
+    private final DifyServiceExecutionService difyServiceExecutionService;
     private final StringRedisTemplate stringRedisTemplate;
 
     private final BCryptPasswordEncoder passwordEncoder;
@@ -123,6 +129,9 @@ public class PaymentApproveService {
                     "AI_SERVICE"
             );
         } catch (Exception e) {
+            log.error("[PaymentApproveService] transferUsdc 실패: walletAddress={}, amount={}, error={}",
+                    wallet.getWalletAddress(), estimatedCost, e.getMessage(), e);
+            aiRequest.fail("블록체인 전송 실패: " + e.getMessage());
             paymentLogService.saveFailedPaymentLog(
                     aiRequest.getUser(), aiRequest, wallet, orderId, receiverWalletAddress, estimatedCost);
             throw new CustomException(ErrorType.INTERNAL_SERVER_ERROR);
@@ -147,10 +156,18 @@ public class PaymentApproveService {
         // 13. 지갑 잔액 차감
         wallet.updateBalance(wallet.getBalance().subtract(estimatedCost));
 
-        // 14. 요청 상태 업데이트
+        // 14. 요청 상태 업데이트 (APPROVED → EXECUTING)
         aiRequest.approve();
         aiRequest.startExecution();
-        aiRequest.complete();
+
+        // 15. 트랜잭션 커밋 후 Dify 서비스 실행 비동기 트리거
+        final Long aiRequestId = aiRequest.getId();
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                difyServiceExecutionService.executeService(aiRequestId);
+            }
+        });
 
         return PaymentApproveResponse.builder()
                 .requestId(aiRequest.getId())

@@ -16,12 +16,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -30,6 +35,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class S3Service {
 
+    private final S3Client s3Client;
     private final S3Presigner s3Presigner;
     private final FileAttachmentRepository fileAttachmentRepository;
     private final ChatSessionRepository chatSessionRepository;
@@ -92,6 +98,43 @@ public class S3Service {
                 file.getFileSize(),
                 EXPIRES_IN_SECONDS
         );
+    }
+
+    //외부 URL(Dify 임시 URL)에서 파일을 다운로드해 S3에 영구 저장하고 S3 URL을 반환
+    public String uploadFromUrl(String sourceUrl, String s3Key, String contentType) {
+        log.info("[S3Service] Dify 파일 S3 업로드 시작: s3Key={}", s3Key);
+        try {
+            URL url = new URL(sourceUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(10_000);
+            conn.setReadTimeout(30_000);
+            conn.connect();
+
+            try (InputStream inputStream = conn.getInputStream()) {
+                byte[] fileBytes = inputStream.readAllBytes();
+
+                PutObjectRequest putRequest = PutObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(s3Key)
+                        .contentType(contentType != null ? contentType : "application/octet-stream")
+                        .build();
+
+                s3Client.putObject(putRequest, RequestBody.fromBytes(fileBytes));
+            }
+
+            String s3Url = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + s3Key;
+            log.info("[S3Service] Dify 파일 S3 업로드 완료: s3Url={}", s3Url);
+            return s3Url;
+
+        } catch (Exception e) {
+            log.error("[S3Service] Dify 파일 S3 업로드 실패 (원본 URL 유지): sourceUrl={}, error={}", sourceUrl, e.getMessage());
+            return sourceUrl;
+        }
+    }
+
+    // Dify 생성 파일용 S3 키 생성.
+    public String buildS3Key(Long userId, Long aiRequestId, String fileName) {
+        return "generated/" + userId + "/" + aiRequestId + "/" + fileName;
     }
 
     // 업로드 완료 후 DB에 파일 정보 저장

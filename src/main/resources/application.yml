@@ -34,20 +34,20 @@ spring:
           max-idle: 8
           min-idle: 0
 
-  cloud:
-    aws:
-      credentials:
-        access-key: ${AWS_ACCESS_KEY}
-        secret-key: ${AWS_SECRET_KEY}
-      region:
-        static: ap-northeast-2
-      s3:
-        bucket: ${S3_BUCKET_NAME}
-
 jwt:
   secret: ${JWT_SECRET}
   expiration: 2419200000
   refresh-expiration: 2419200000
+
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    region:
+      static: ap-northeast-2
+    s3:
+      bucket: ${S3_BUCKET_NAME}
 
 google:
   client-id: ${GOOGLE_CLIENT_ID}
@@ -57,9 +57,11 @@ coolsms:
   api-secret: ${COOLSMS_API_SECRET}
   from-number: ${COOLSMS_FROM_NUMBER}
 
+
 dify:
   base-url: ${DIFY_BASE_URL}
   chat-analysis-api-key: ${DIFY_CHAT_ANALYSIS_API_KEY}
+  service-execution-api-key: ${DIFY_SERVICE_EXECUTION_API_KEY}
 
 blockchain:
   rpc-url: ${BLOCKCHAIN_RPC_URL}
