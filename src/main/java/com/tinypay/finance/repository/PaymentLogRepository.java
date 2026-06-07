@@ -22,6 +22,8 @@ public interface PaymentLogRepository extends JpaRepository<PaymentLog, Long> {
 
     Optional<PaymentLog> findByRequest(AiRequest request);
 
+    Optional<PaymentLog> findByRequestAndPaymentStatus(AiRequest request, PaymentStatus status);
+
     List<PaymentLog> findTop3ByUser_IdAndPaymentStatusOrderByExecutedAtDesc(Long userId, PaymentStatus status);
 
     List<PaymentLog> findTop10ByUser_IdOrderByIdDesc(Long userId);

@@ -71,6 +71,8 @@ blockchain:
   server-wallet:
     address: ${SERVER_WALLET_ADDRESS}
     private-key: ${SERVER_WALLET_PRIVATE_KEY}
+  receiver-wallet:
+    address: ${RECEIVER_WALLET_ADDRESS}
   encryption:
     master-key: ${WALLET_ENCRYPTION_KEY}
   gas:
