@@ -1,5 +1,6 @@
 package com.tinypay.finance.service;
 
+import com.tinypay.abuse.service.AbuseService;
 import com.tinypay.blockchain.service.BlockchainService;
 import com.tinypay.finance.domain.BudgetPolicy;
 import com.tinypay.finance.domain.Wallet;
@@ -29,6 +30,7 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class BudgetPolicyService {
 
+    private final AbuseService abuseService;
     private final UserRepository userRepository;
     private final BudgetPolicyRepository budgetPolicyRepository;
     private final WalletRepository walletRepository;
@@ -124,6 +126,7 @@ public class BudgetPolicyService {
             stringRedisTemplate.expire(failKey, Duration.ofHours(24));
 
             if (failCount != null && failCount >= MAX_PASSWORD_FAILURES) {
+                abuseService.recordRateLimitViolation(userId, "자동결제 활성화 비밀번호 " + MAX_PASSWORD_FAILURES + "회 실패: userId=" + userId);
                 blockchainService.lockWalletForBruteForce(userId);
                 stringRedisTemplate.delete(failKey);
                 throw new CustomException(ErrorType.WALLET_LOCKED_BY_PASSWORD_FAILURE);
