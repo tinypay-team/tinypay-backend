@@ -174,15 +174,17 @@ public class ReceiptVerifierImpl implements ReceiptVerifier {
     }
 
     /**
-     * 3단계: 공식 MockUSDC 컨트랙트 주소 확인
+     * 3단계: 공식 MockUSDC 컨트랙트의 Transfer 이벤트 확인
      *
-     * 트랜잭션의 to 주소가 application.yml에 설정된 공식 MockUSDC 컨트랙트 주소와
-     * 일치하는지 확인한다. 가짜 컨트랙트로의 트랜잭션을 차단하기 위함.
+     * 트랜잭션이 MockUSDC 컨트랙트의 Transfer 이벤트를 발생시켰는지 확인한다.
+     * 직접 호출(mint)이든 TinyPayment 경유 호출(executePayment)이든
+     * 결국 MockUSDC에서 Transfer 이벤트가 발생해야 정상적인 USDC 이동이다.
      *
-     * 주소 비교는 대소문자 무시 (이더리움 주소 표기 차이 대응).
+     * 기존 로직(receipt.getTo() 비교)은 mint 같은 직접 호출만 통과시키고,
+     * TinyPayment 경유 결제는 잘못 거부하는 문제가 있었음.
      *
      * @param txHash 검증할 트랜잭션 해시
-     * @return 공식 컨트랙트 호출이면 success, 아니면 INVALID_CONTRACT 실패
+     * @return MockUSDC Transfer 이벤트 존재 시 success, 없으면 INVALID_CONTRACT 실패
      */
     private VerificationResult checkContract(String txHash) {
         try {
@@ -198,14 +200,28 @@ public class ReceiptVerifierImpl implements ReceiptVerifier {
                 );
             }
 
-            TransactionReceipt receipt = receiptOpt.get();
-            String actualContract = receipt.getTo();
+            // Transfer 이벤트 파싱
+            List<MockUSDC.TransferEventResponse> events = mockUSDC.getTransferEvents(receiptOpt.get());
 
-            if (actualContract == null || !actualContract.equalsIgnoreCase(mockUsdcAddress)) {
+            if (events.isEmpty()) {
                 return VerificationResult.fail(
                         FailReason.INVALID_CONTRACT,
-                        String.format("공식 USDC 컨트랙트가 아님 (expected=%s, actual=%s)",
-                                mockUsdcAddress, actualContract)
+                        "Transfer 이벤트가 발견되지 않음: " + txHash
+                );
+            }
+
+            // Transfer 이벤트의 emitter(log address)가 MockUSDC 컨트랙트인지 확인
+            boolean isMockUsdc = events.stream()
+                    .anyMatch(event -> event.log != null
+                            && event.log.getAddress() != null
+                            && event.log.getAddress().equalsIgnoreCase(mockUsdcAddress));
+
+            if (!isMockUsdc) {
+                return VerificationResult.fail(
+                        FailReason.INVALID_CONTRACT,
+                        String.format("MockUSDC 컨트랙트의 Transfer 이벤트 아님 (expected=%s, actual_emitters=%s)",
+                                mockUsdcAddress,
+                                events.stream().map(e -> e.log != null ? e.log.getAddress() : "null").toList())
                 );
             }
 

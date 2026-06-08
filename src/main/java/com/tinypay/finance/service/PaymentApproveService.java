@@ -1,5 +1,6 @@
 package com.tinypay.finance.service;
 
+import com.tinypay.abuse.service.AbuseService;
 import com.tinypay.blockchain.service.BlockchainService;
 import com.tinypay.chat.service.DifyServiceExecutionService;
 import com.tinypay.finance.domain.*;
@@ -28,6 +29,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -35,6 +37,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PaymentApproveService {
 
+    private final AbuseService abuseService;
     private final AiRequestRepository aiRequestRepository;
     private final WalletRepository walletRepository;
     private final BudgetPolicyRepository budgetPolicyRepository;
@@ -46,7 +49,7 @@ public class PaymentApproveService {
 
     private final BCryptPasswordEncoder passwordEncoder;
 
-    @Value("${blockchain.server-wallet.address}")
+    @Value("${blockchain.receiver-wallet.address}")
     private String receiverWalletAddress;
 
     private static final int USDC_DECIMALS = 6;
@@ -64,35 +67,55 @@ public class PaymentApproveService {
             throw new CustomException(ErrorType.REQUEST_FORBIDDEN);
         }
 
-        // 3. 상태 확인
+        // 3. 멱등성 체크 — 이미 성공한 결제면 기존 결과 반환
+        Optional<PaymentLog> existingLog = paymentLogRepository.findByRequestAndPaymentStatus(aiRequest, PaymentStatus.SUCCESS);
+        if (existingLog.isPresent()) {
+            PaymentLog log = existingLog.get();
+            return PaymentApproveResponse.builder()
+                    .requestId(aiRequest.getId())
+                    .status(aiRequest.getStatus().name())
+                    .payment(PaymentApproveResponse.PaymentInfo.builder()
+                            .paymentId(log.getId())
+                            .orderId(log.getOrderId())
+                            .transactionHash(log.getTxHash())
+                            .amount(log.getAmount())
+                            .executedAt(log.getExecutedAt())
+                            .build())
+                    .wallet(PaymentApproveResponse.WalletInfo.builder()
+                            .balance(log.getWallet().getBalance())
+                            .build())
+                    .build();
+        }
+
+        // 4. 상태 확인
         if (aiRequest.getStatus() != AiRequestStatus.WAITING_APPROVAL) {
             throw new CustomException(ErrorType.INVALID_REQUEST_STATUS);
         }
 
-        // 4. 예상 금액 일치 확인
+        // 5. 예상 금액 일치 확인
         if (aiRequest.getEstimatedTotalCost().compareTo(request.getEstimatedCost()) != 0) {
             throw new CustomException(ErrorType.ESTIMATED_COST_MISMATCH);
         }
 
         BigDecimal estimatedCost = request.getEstimatedCost();
 
-        // 5. 지갑 조회
+        // 6. 지갑 조회
         Wallet wallet = walletRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new CustomException(ErrorType.WALLET_NOT_FOUND));
 
-        // 6. 지갑 상태 확인
+        // 7. 지갑 상태 확인
         if (wallet.getWalletStatus() == WalletStatus.LOCKED) {
             throw new CustomException(ErrorType.WALLET_LOCKED);
         }
 
-        // 7. 예산 정책 조회
+        // 8. 예산 정책 조회
         BudgetPolicy policy = budgetPolicyRepository.findByUser_IdAndDeletedAtIsNull(userId).orElse(null);
         boolean autoPaymentEnabled = policy != null && policy.isAutoPaymentEnabled();
         boolean perPaymentLimitExceeded = policy != null
                 && policy.getPerRequestLimit() != null
                 && estimatedCost.compareTo(policy.getPerRequestLimit()) > 0;
 
-        // 8. 자동결제 활성화 + 한도 미초과 시 비밀번호 불필요
+        // 9. 자동결제 활성화 + 한도 미초과 시 비밀번호 불필요
         //    그 외(비밀번호 비활성화 or 한도 초과)는 비밀번호 필요
         if (!autoPaymentEnabled || perPaymentLimitExceeded) {
             if (!StringUtils.hasText(request.getWalletPassword())) {
@@ -101,7 +124,7 @@ public class PaymentApproveService {
             verifyWalletPassword(userId, request.getWalletPassword(), wallet);
         }
 
-        // 9. 월 한도 확인
+        // 10. 월 한도 확인
         if (policy != null && policy.getMonthlyLimit() != null) {
             BigDecimal monthlySpent = paymentLogRepository
                     .sumSuccessfulAmountThisMonth(userId, PaymentStatus.SUCCESS);
@@ -110,12 +133,15 @@ public class PaymentApproveService {
             }
         }
 
-        // 10. 잔액 확인
+        // 11. 잔액 확인
         if (wallet.getBalance().compareTo(estimatedCost) < 0) {
             throw new CustomException(ErrorType.INSUFFICIENT_BALANCE);
         }
 
-        // 11. 블록체인 결제 실행
+        // 12. 요청 상태 APPROVED로 변경 (동시 요청 방지 — 이후 재진입 시 상태 체크에서 차단됨)
+        aiRequest.approve();
+
+        // 13. 블록체인 결제 실행
         String orderId = UUID.randomUUID().toString();
         BigInteger rawAmount = estimatedCost.movePointRight(USDC_DECIMALS).toBigInteger();
 
@@ -128,6 +154,8 @@ public class PaymentApproveService {
                     rawAmount,
                     "AI_SERVICE"
             );
+
+            blockchainService.verifyReceipt(txHash, receiverWalletAddress, rawAmount);
         } catch (Exception e) {
             log.error("[PaymentApproveService] transferUsdc 실패: walletAddress={}, amount={}, error={}",
                     wallet.getWalletAddress(), estimatedCost, e.getMessage(), e);
@@ -136,7 +164,7 @@ public class PaymentApproveService {
                     aiRequest.getUser(), aiRequest, wallet, orderId, receiverWalletAddress, estimatedCost);
             throw new CustomException(ErrorType.INTERNAL_SERVER_ERROR);
         }
-        // 12. 결제 기록 저장
+        // 14. 결제 기록 저장
         LocalDateTime executedAt = LocalDateTime.now();
         PaymentLog paymentLog = PaymentLog.builder()
                 .user(aiRequest.getUser())
@@ -153,14 +181,13 @@ public class PaymentApproveService {
                 .build();
         paymentLogRepository.save(paymentLog);
 
-        // 13. 지갑 잔액 차감
+        // 15. 지갑 잔액 차감
         wallet.updateBalance(wallet.getBalance().subtract(estimatedCost));
 
-        // 14. 요청 상태 업데이트 (APPROVED → EXECUTING)
-        aiRequest.approve();
+        // 16. 요청 상태 업데이트 (APPROVED → EXECUTING)
         aiRequest.startExecution();
 
-        // 15. 트랜잭션 커밋 후 Dify 서비스 실행 비동기 트리거
+        // 17. 트랜잭션 커밋 후 Dify 서비스 실행 비동기 트리거
         final Long aiRequestId = aiRequest.getId();
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
@@ -193,6 +220,7 @@ public class PaymentApproveService {
             stringRedisTemplate.expire(failKey, Duration.ofHours(24));
 
             if (failCount != null && failCount >= MAX_PASSWORD_FAILURES) {
+                abuseService.recordRateLimitViolation(userId, "결제 비밀번호 " + MAX_PASSWORD_FAILURES + "회 실패: userId=" + userId);
                 blockchainService.lockWalletForBruteForce(userId);
                 stringRedisTemplate.delete(failKey);
                 throw new CustomException(ErrorType.WALLET_LOCKED_BY_PASSWORD_FAILURE);
