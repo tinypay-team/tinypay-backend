@@ -5,6 +5,7 @@ import com.tinypay.chat.domain.ChatSession;
 import com.tinypay.chat.domain.MessageType;
 import com.tinypay.chat.domain.SenderRole;
 import com.tinypay.chat.repository.ChatMessageRepository;
+import com.tinypay.chat.repository.FileAttachmentRepository;
 import com.tinypay.dify.client.DifyClient;
 import com.tinypay.dify.domain.AiRequest;
 import com.tinypay.dify.domain.AiRequestApiItem;
@@ -42,6 +43,7 @@ public class DifyServiceExecutionService {
     private final AiRequestApiItemRepository aiRequestApiItemRepository;
     private final PaymentLogRepository paymentLogRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final FileAttachmentRepository fileAttachmentRepository;
     private final ChatAnalysisService chatAnalysisService;
     private final DifyClient difyClient;
     private final S3Service s3Service;
@@ -118,11 +120,11 @@ public class DifyServiceExecutionService {
                             .build()
             );
 
-            // 7. Dify 임시 URL → S3 영구 저장 (expires_at 만료 대비)
+            // 7. Dify 임시 URL → S3 영구 저장 + FileAttachment DB 등록 (fileId 발급)
             List<GeneratedFileDto> generatedFiles = response.data() != null
                     ? response.data().generatedFiles() : null;
             List<GeneratedFileDto> s3Files = uploadGeneratedFilesToS3(
-                    generatedFiles, aiRequest.getUser().getId(), aiRequestId);
+                    generatedFiles, aiRequest.getUser().getId(), aiRequestId, chatSession);
 
             // 8. AiRequest 완료 처리 (executed_services, generated_files 저장)
             String executedServicesJson = toJson(

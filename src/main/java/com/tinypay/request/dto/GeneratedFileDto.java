@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record GeneratedFileDto(
 
+        Long fileId,
+
         @JsonAlias("file_name")
         String fileName,
 
