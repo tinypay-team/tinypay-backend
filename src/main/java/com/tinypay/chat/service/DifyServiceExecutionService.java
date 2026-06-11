@@ -2,9 +2,11 @@ package com.tinypay.chat.service;
 
 import com.tinypay.chat.domain.ChatMessage;
 import com.tinypay.chat.domain.ChatSession;
+import com.tinypay.chat.domain.FileAttachment;
 import com.tinypay.chat.domain.MessageType;
 import com.tinypay.chat.domain.SenderRole;
 import com.tinypay.chat.repository.ChatMessageRepository;
+import com.tinypay.chat.repository.FileAttachmentRepository;
 import com.tinypay.dify.client.DifyClient;
 import com.tinypay.dify.domain.AiRequest;
 import com.tinypay.dify.domain.AiRequestApiItem;
@@ -29,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 // 결제 완료 후 Dify 서비스 실행 Workflow를 비동기로 처리하는 서비스
 @Slf4j
@@ -42,6 +45,7 @@ public class DifyServiceExecutionService {
     private final AiRequestApiItemRepository aiRequestApiItemRepository;
     private final PaymentLogRepository paymentLogRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final FileAttachmentRepository fileAttachmentRepository;
     private final ChatAnalysisService chatAnalysisService;
     private final DifyClient difyClient;
     private final S3Service s3Service;
@@ -118,11 +122,11 @@ public class DifyServiceExecutionService {
                             .build()
             );
 
-            // 7. Dify 임시 URL → S3 영구 저장 (expires_at 만료 대비)
+            // 7. Dify 임시 URL → S3 영구 저장 + FileAttachment DB 등록 (fileId 발급)
             List<GeneratedFileDto> generatedFiles = response.data() != null
                     ? response.data().generatedFiles() : null;
             List<GeneratedFileDto> s3Files = uploadGeneratedFilesToS3(
-                    generatedFiles, aiRequest.getUser().getId(), aiRequestId);
+                    generatedFiles, aiRequest.getUser().getId(), aiRequestId, chatSession);
 
             // 8. AiRequest 완료 처리 (executed_services, generated_files 저장)
             String executedServicesJson = toJson(
@@ -145,9 +149,9 @@ public class DifyServiceExecutionService {
         }
     }
 
-    // Dify 임시 URL 파일들을 S3에 업로드하고 URL 교체
+    // Dify 임시 URL 파일들을 S3에 업로드, FileAttachment DB 저장 후 fileId 포함 DTO 반환
     private List<GeneratedFileDto> uploadGeneratedFilesToS3(
-            List<GeneratedFileDto> files, Long userId, Long aiRequestId) {
+            List<GeneratedFileDto> files, Long userId, Long aiRequestId, ChatSession chatSession) {
         if (files == null || files.isEmpty()) return files;
 
         return files.stream().map(file -> {
@@ -161,7 +165,22 @@ public class DifyServiceExecutionService {
             };
             String s3Url = s3Service.uploadFromUrl(file.fileUrl(), s3Key, contentType);
 
-            return new GeneratedFileDto(file.fileName(), s3Url, file.fileType(), file.mimeType());
+            // FileAttachment DB 등록 → fileId 발급
+            FileAttachment saved = fileAttachmentRepository.save(
+                    FileAttachment.builder()
+                            .session(chatSession)
+                            .fileName(file.fileName())
+                            .fileUrl(s3Url)
+                            .fileType(file.fileType() != null ? file.fileType() : "FILE")
+                            .fileSize(0L)
+                            .fileHash(UUID.randomUUID().toString())
+                            .storageKey(s3Key)
+                            .build()
+            );
+
+            log.info("[DifyServiceExecution] 생성 파일 DB 등록: fileId={}, fileName={}", saved.getId(), saved.getFileName());
+
+            return new GeneratedFileDto(saved.getId(), file.fileName(), s3Url, file.fileType(), file.mimeType());
         }).toList();
     }
 
