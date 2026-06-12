@@ -76,5 +76,5 @@ blockchain:
   encryption:
     master-key: ${WALLET_ENCRYPTION_KEY}
   gas:
-    price: 30000000000
-    limit: 300000
+    price: 3000000000
+    limit: 150000
