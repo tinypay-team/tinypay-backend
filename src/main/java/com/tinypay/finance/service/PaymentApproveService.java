@@ -164,7 +164,8 @@ public class PaymentApproveService {
                     aiRequest.getUser(), aiRequest, wallet, orderId, receiverWalletAddress, estimatedCost);
             throw new CustomException(ErrorType.INTERNAL_SERVER_ERROR);
         }
-        // 14. 결제 기록 저장
+        // 14. 이전 실패 기록 삭제 후 새 결제 기록 저장 (재시도 시 Unique 충돌 방지)
+        paymentLogRepository.deleteByRequestAndPaymentStatus(aiRequest, PaymentStatus.FAILED);
         LocalDateTime executedAt = LocalDateTime.now();
         PaymentLog paymentLog = PaymentLog.builder()
                 .user(aiRequest.getUser())
