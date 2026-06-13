@@ -30,6 +30,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,8 +40,6 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class DifyServiceExecutionService {
-
-    private static final int CONTEXT_MESSAGE_LIMIT = 10;
 
     private final AiRequestRepository aiRequestRepository;
     private final AiRequestApiItemRepository aiRequestApiItemRepository;
@@ -195,9 +195,11 @@ public class DifyServiceExecutionService {
     }
 
     private List<ChatMessage> getRecentMessagesForContext(Long sessionId) {
-        List<ChatMessage> all = chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
-        if (all.size() <= CONTEXT_MESSAGE_LIMIT) return all;
-        return all.subList(all.size() - CONTEXT_MESSAGE_LIMIT, all.size());
+        List<ChatMessage> recent = new ArrayList<>(
+                chatMessageRepository.findTop10BySessionIdOrderByCreatedAtDescIdDesc(sessionId)
+        );
+        Collections.reverse(recent);
+        return recent;
     }
 
     private void saveErrorMessage(ChatSession chatSession, AiRequest aiRequest, String content) {

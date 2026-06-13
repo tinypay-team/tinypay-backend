@@ -30,8 +30,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -39,9 +45,7 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class ChatMessageService {
 
-    private static final int CONTEXT_MESSAGE_LIMIT = 10;
-
-    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    private final ObjectMapper objectMapper;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatSessionRepository chatSessionRepository;
     private final FileAttachmentRepository fileAttachmentRepository;
@@ -74,7 +78,7 @@ public class ChatMessageService {
         MessageType messageType = (content == null && request.fileId() != null)
                 ? MessageType.FILE : MessageType.TEXT;
 
-        boolean isFirstMessage = chatMessageRepository.countBySessionId(sessionId) == 0;
+        boolean isFirstMessage = !chatMessageRepository.existsBySessionId(sessionId);
 
         ChatMessage userMessage = chatMessageRepository.save(
                 ChatMessage.builder()
@@ -154,6 +158,11 @@ public class ChatMessageService {
                 .orElseThrow(() -> new CustomException(ErrorType.CHAT_SESSION_NOT_FOUND));
 
         List<ChatMessage> messages = chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
+        List<Long> messageIds = messages.stream().map(ChatMessage::getId).toList();
+        Map<Long, FileAttachment> filesByMessageId = messageIds.isEmpty()
+                ? Map.of()
+                : fileAttachmentRepository.findByMessage_IdIn(messageIds).stream()
+                        .collect(Collectors.toMap(file -> file.getMessage().getId(), Function.identity()));
 
         // requestId별 첫 번째 어시스턴트 메시지 ID 수집 → 결제카드 메시지 판별용
         Set<Long> paymentCardMessageIds = messages.stream()
@@ -166,6 +175,21 @@ public class ChatMessageService {
                 .filter(java.util.Optional::isPresent)
                 .map(opt -> opt.get().getId())
                 .collect(java.util.stream.Collectors.toSet());
+
+        List<Long> paymentCardRequestIds = messages.stream()
+                .filter(message -> paymentCardMessageIds.contains(message.getId()))
+                .map(ChatMessage::getRequest)
+                .filter(java.util.Objects::nonNull)
+                .map(AiRequest::getId)
+                .distinct()
+                .toList();
+        Map<Long, List<ApiItemResponse>> apiItemsByRequestId = new HashMap<>();
+        if (!paymentCardRequestIds.isEmpty()) {
+            aiRequestApiItemRepository.findAllByRequest_IdInOrderByRequest_IdAscExecutionOrderAsc(paymentCardRequestIds)
+                    .forEach(item -> apiItemsByRequestId
+                            .computeIfAbsent(item.getRequest().getId(), ignored -> new ArrayList<>())
+                            .add(ApiItemResponse.from(item)));
+        }
 
         return messages.stream()
                 .map(message -> {
@@ -182,11 +206,7 @@ public class ChatMessageService {
 
                         if (isPaymentCard) {
                             // 결제카드 메시지: apiItems + 예상금액만 표시
-                            List<ApiItemResponse> fetchedItems = aiRequestApiItemRepository
-                                    .findAllByRequestOrderByExecutionOrderAsc(request)
-                                    .stream()
-                                    .map(ApiItemResponse::from)
-                                    .toList();
+                            List<ApiItemResponse> fetchedItems = apiItemsByRequestId.getOrDefault(request.getId(), List.of());
                             if (!fetchedItems.isEmpty()) {
                                 apiItems = fetchedItems;
                                 totalEstimatedCost = request.getEstimatedTotalCost();
@@ -200,9 +220,7 @@ public class ChatMessageService {
                     }
 
                     // 사용자가 첨부한 파일 조회
-                    FileAttachment file = fileAttachmentRepository
-                            .findByMessage_Id(message.getId())
-                            .orElse(null);
+                    FileAttachment file = filesByMessageId.get(message.getId());
 
                     return new GetChatMessageResponse(
                             message.getId(),
@@ -235,9 +253,11 @@ public class ChatMessageService {
     }
 
     private List<ChatMessage> getRecentMessagesForContext(Long sessionId) {
-        List<ChatMessage> all = chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
-        if (all.size() <= CONTEXT_MESSAGE_LIMIT) return all;
-        return all.subList(all.size() - CONTEXT_MESSAGE_LIMIT, all.size());
+        List<ChatMessage> recent = new ArrayList<>(
+                chatMessageRepository.findTop10BySessionIdOrderByCreatedAtDescIdDesc(sessionId)
+        );
+        Collections.reverse(recent);
+        return recent;
     }
 
     private static final int MAX_TITLE_LENGTH = 30;
