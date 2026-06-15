@@ -61,10 +61,16 @@ public class DifyAsyncService {
             handleDifyResponse(difyResponse, aiRequest, chatSession);
 
         } catch (CustomException e) {
-            // Dify 호출 실패 또는 응답 오류
-            aiRequest.fail("Dify 오류: " + e.getMessage());
-            saveErrorMessage(chatSession, aiRequest, "AI 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-            log.error("[DifyAsync] 처리 실패: aiRequestId={}, error={}", aiRequestId, e.getMessage());
+            if (e.getErrorType() == ErrorType.PROMPT_INJECTION_DETECTED) {
+                aiRequest.fail("프롬프트 인젝션 감지");
+                saveErrorMessage(chatSession, aiRequest,
+                        "⚠️ 보안 정책에 위반된 요청이 감지되어 차단되었습니다.\n해당 요청은 기록되며, 반복 시 서비스 이용이 제한될 수 있습니다.");
+                log.warn("[DifyAsync] 프롬프트 인젝션 차단: aiRequestId={}", aiRequestId);
+            } else {
+                aiRequest.fail("Dify 오류: " + e.getMessage());
+                saveErrorMessage(chatSession, aiRequest, "AI 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+                log.error("[DifyAsync] 처리 실패: aiRequestId={}, error={}", aiRequestId, e.getMessage());
+            }
 
         } catch (Exception e) {
             // 예상치 못한 오류
