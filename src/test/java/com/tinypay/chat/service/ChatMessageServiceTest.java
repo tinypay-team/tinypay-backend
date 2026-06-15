@@ -1,6 +1,5 @@
 package com.tinypay.chat.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tinypay.chat.domain.ChatMessage;
 import com.tinypay.chat.domain.ChatSession;
 import com.tinypay.chat.domain.FileAttachment;
@@ -58,7 +57,6 @@ class ChatMessageServiceTest {
     @BeforeEach
     void setUp() {
         service = new ChatMessageService(
-                new ObjectMapper().findAndRegisterModules(),
                 chatMessageRepository,
                 chatSessionRepository,
                 fileAttachmentRepository,
@@ -194,7 +192,7 @@ class ChatMessageServiceTest {
                 response(5L, SenderRole.ASSISTANT, MessageType.TEXT, "done", 101L,
                         AiRequestResponseStatus.COMPLETED,
                         null, null,
-                        List.of(new GeneratedFileDto("result.pdf", "https://example.com/result.pdf",
+                        List.of(new GeneratedFileDto(null, "result.pdf", "https://example.com/result.pdf",
                                 "PDF", "application/pdf")),
                         null, null, null, 5),
                 response(6L, SenderRole.USER, MessageType.FILE, null, null, null,

@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ChatMessageService {
 
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
     private final ChatMessageRepository chatMessageRepository;
     private final ChatSessionRepository chatSessionRepository;
     private final FileAttachmentRepository fileAttachmentRepository;
