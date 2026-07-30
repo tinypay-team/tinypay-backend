@@ -9,7 +9,10 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "file")
+@Table(
+        name = "file",
+        indexes = @Index(name = "idx_file_message_id", columnList = "message_id")
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class FileAttachment extends BaseTimeEntity {
 

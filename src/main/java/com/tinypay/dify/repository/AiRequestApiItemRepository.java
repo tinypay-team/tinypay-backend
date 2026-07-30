@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface AiRequestApiItemRepository extends JpaRepository<AiRequestApiItem, Long> {
     List<AiRequestApiItem> findAllByRequestOrderByExecutionOrderAsc(AiRequest request);
+    List<AiRequestApiItem> findAllByRequest_IdInOrderByRequest_IdAscExecutionOrderAsc(List<Long> requestIds);
 }

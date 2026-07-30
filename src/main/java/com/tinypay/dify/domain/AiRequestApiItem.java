@@ -11,7 +11,10 @@ import java.math.BigDecimal;
 
 @Getter
 @Entity
-@Table(name = "ai_request_api_item")
+@Table(
+        name = "ai_request_api_item",
+        indexes = @Index(name = "idx_api_item_request_execution", columnList = "request_id, execution_order")
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AiRequestApiItem extends BaseTimeEntity {
 

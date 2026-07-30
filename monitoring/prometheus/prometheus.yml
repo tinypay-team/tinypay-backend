@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  # 개선 후 서버
+  - job_name: "tinypay-backend-after"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets:
+          - "host.docker.internal:8080"
+
+  # 개선 전 서버
+  - job_name: "tinypay-backend-before"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets:
+          - "host.docker.internal:8081"
